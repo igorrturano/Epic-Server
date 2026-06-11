@@ -23,10 +23,8 @@ const PER_PAGE        := 6;
 
 program infectarea(mob)
 
-	Print("[infectarea][DBG] iniciado por " + mob.name + " (serial=" + mob.serial + ", cmdlevel=" + mob.cmdlevel + ")");
 
 	while (1)
-		Print("[infectarea][DBG] abrindo gump principal");
 		var gump := Gump(mob, "Área de Infecção", 340, 210);
 
 		var txtSub    := Text("txtSub",    25, 80,  "Gerenciar áreas de infecção ambiental", TEXT_COLOR::COLOR_YELLOW);
@@ -43,13 +41,10 @@ program infectarea(mob)
 		gump.Dispose();
 
 		if (ev.GetControl() == EVENT_ACTION::CLOSED)
-			Print("[infectarea][DBG] gump fechado, encerrando");
 			return;
 		elseif (ev.GetControl().Equals(btnCriar))
-			Print("[infectarea][DBG] -> Criar Nova Área");
 			FluxoCriarArea(mob);
 		elseif (ev.GetControl().Equals(btnListar))
-			Print("[infectarea][DBG] -> Listar Áreas Ativas");
 			FluxoListarAreas(mob);
 		endif
 	endwhile
@@ -62,15 +57,12 @@ endprogram
 
 function FluxoCriarArea(mob)
 
-	Print("[infectarea][DBG] FluxoCriarArea: pedindo target");
 	SendSysMessage(mob, "Selecione o local no mapa.");
 	var loc := TargetCoordinates(mob);
 	if (!loc)
-		Print("[infectarea][DBG] FluxoCriarArea: target cancelado");
 		SendSysMessage(mob, "Cancelado.");
 		return;
 	endif
-	Print("[infectarea][DBG] FluxoCriarArea: target=" + loc.x + "," + loc.y + "," + loc.z + " realm=" + mob.realm);
 
 	var gump := Gump(mob, "", 460, 535);
 	var y := 70;
@@ -217,45 +209,35 @@ function FluxoCriarArea(mob)
 
 	// Cria item marcador no backpack do GM, seta invisible, depois move para o local final
 	// (evita que clientes em range no momento da criação recebam o 0x1A visível)
-	Print("[infectarea][DBG] criando marker no backpack do GM graphic=" + Hex(MARKER_GRAPHIC) + " (destino final " + loc.x + "," + loc.y + "," + loc.z + ")");
 	var marker := CreateItemInBackpack(mob, MARKER_GRAPHIC, 1);
 	if (!marker)
-		Print("[infectarea][DBG] CreateItemInBackpack FALHOU — tentando CreateItemAtLocation no GM");
 		marker := CreateItemAtLocation(mob.x, mob.y, mob.z, MARKER_GRAPHIC, 1, mob.realm);
 		if (!marker)
-			Print("[infectarea][DBG] CreateItemAtLocation FALHOU TAMBÉM");
 			SendSysMessageEx(mob, "Falha ao criar marcador no local.", SSM_FAIL);
 			return;
 		endif
 	endif
-	Print("[infectarea][DBG] marker criado serial=" + Hex(marker.serial) + " graphic=" + Hex(marker.graphic) + " container=" + (marker.container ? "sim" : "não"));
 
 	marker.invisible := 1;
 	marker.movable   := 0;
 	marker.color     := MARKER_COLOR;
 	marker.name      := "Infecção: " + nome;
-	Print("[infectarea][DBG] props aplicadas -> invisible=" + marker.invisible + " movable=" + marker.movable + " color=" + Hex(marker.color) + " name='" + marker.name + "'");
 
 	var moveRes := MoveObjectToLocation(marker, loc.x, loc.y, loc.z, mob.realm, MOVEOBJECT_FORCELOCATION);
-	Print("[infectarea][DBG] MoveObjectToLocation result=" + moveRes + " pos_final=" + marker.x + "," + marker.y + "," + marker.z + " invisible_after_move=" + marker.invisible);
 
 	// Persiste no datafile
 	var area_id := "area_" + marker.serial;
-	Print("[infectarea][DBG] area_id='" + area_id + "', abrindo datafile " + INFECTAREA_DF);
 
 	var df := OpenDataFile(INFECTAREA_DF);
 	if (!df)
-		Print("[infectarea][DBG] datafile não existe, criando");
 		CreateDataFile(INFECTAREA_DF);
 		df := OpenDataFile(INFECTAREA_DF);
 	endif
 	if (!df)
-		Print("[infectarea][DBG] FALHA ao abrir datafile mesmo após criar");
 	endif
 
 	var elem := df.CreateElement(area_id);
 	if (!elem)
-		Print("[infectarea][DBG] FALHA ao criar elemento '" + area_id + "' no datafile");
 	endif
 	elem.SetProp("marker_serial", marker.serial);
 	elem.SetProp("name",          nome);
@@ -265,7 +247,6 @@ function FluxoCriarArea(mob)
 	elem.SetProp("diseases",      diseases);
 	elem.SetProp("expiry",        dur > 0 ? (POLCore().systime + dur * 60) : 0);
 	elem.SetProp("created_by",    CStr(GetObjProperty(mob, "nome_inicial")));
-	Print("[infectarea][DBG] datafile persistido: range=" + raio + " level=" + nivel + " grade=" + grade + " diseases=" + diseases + " expiry=" + (dur > 0 ? CStr(POLCore().systime + dur * 60) : "0"));
 
 	SetObjProperty(marker, MARKER_PROP, area_id);
 
@@ -275,9 +256,7 @@ function FluxoCriarArea(mob)
 		", " + grade + ", " + dur_txt + ".",
 		SSM_INFO);
 
-	Print("[infectarea][DBG] chamando EnsureWatcherRunning");
 	EnsureWatcherRunning();
-	Print("[infectarea][DBG] FluxoCriarArea concluído");
 
 endfunction
 
@@ -438,19 +417,14 @@ function EnsureWatcherRunning()
 		var hb := DFFindElement(df, "heartbeat");
 		if (hb)
 			var delta := POLCore().systime - CInt(DFGetProp(hb, "ts"));
-			Print("[infectarea][DBG] watcher heartbeat delta=" + delta + "s (limite=" + HB_TIMEOUT + "s)");
 			if (delta < HB_TIMEOUT)
-				Print("[infectarea][DBG] watcher já rodando, não inicia novo");
 				return;
 			endif
 		else
-			Print("[infectarea][DBG] sem heartbeat — primeira execução");
 		endif
 	else
-		Print("[infectarea][DBG] datafile inacessível em EnsureWatcherRunning");
 	endif
 
-	Print("[infectarea][DBG] iniciando watcher " + WATCHER_SCRIPT);
 	start_script(WATCHER_SCRIPT);
 
 endfunction
