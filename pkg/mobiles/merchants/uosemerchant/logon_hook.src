@@ -1,0 +1,15 @@
+use uo;
+use os;
+
+// Hook de logon do módulo uosemerchant.
+// Chamado por pkg/systems/accounts/logon.src a cada login de player.
+// Verifica se há itens devolvidos por vendores aguardando entrega.
+
+program logon_hook(params)
+	var who := params[1];
+	if (!who || !who.isA(POLCLASS_MOBILE)) return; endif
+
+	if (GetObjProperty(who, "notif_vendor_returns") == 1)
+		start_script(":uose:gump_returns", array{who});
+	endif
+endprogram

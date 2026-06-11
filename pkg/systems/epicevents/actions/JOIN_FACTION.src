@@ -38,6 +38,7 @@ program JOIN_FACTION_Action(params)
 
 	var honorary := CInt(action_params.honorary);
 	AddMember(guild, mobile, honorary);
+	_EnsureDadosConvite(mobile, mobile.serial);
 
 	var tipo_label := honorary ? "honorário" : "membro";
 	Message($"Você agora é {tipo_label} de {faccao_name}.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(mobile);

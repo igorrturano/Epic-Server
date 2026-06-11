@@ -7,8 +7,15 @@ include ":gumps:requestGump";
 include "include/say";
 include ":tn:cooldown";
 include ":mastermind:mastermind";
+include ":chestspawn:include/trancaEspecial";
 
 program PuzzleChestOpen(who, container)
+	if (IsTrancaEspecial(container))
+		TrancaDebug("=== PuzzleChestOpen INICIADO ===");
+		TrancaDebug("Player: " + who.name + " | Container: " + Hex(container.objtype) + " serial=" + container.serial);
+		TrancaDebug("cmdlevel=" + who.cmdlevel + " | aberto=" + GetObjProperty(container, "aberto") + " | recreativa=" + GetObjProperty(container, "recreativa"), who);
+	endif
+
 	var time := Getobjproperty(container, "time_fechadura");
 	if (!time)
 		Setobjproperty(container, "time_fechadura", 10);
@@ -52,7 +59,7 @@ program PuzzleChestOpen(who, container)
 	endif
 
 	if (Getobjproperty(container, "recreativa") == 1)
-		if (mastermind(who))
+		if (mastermind(who, container))
 			SendViewContainer(who, container);
 			return 1;
 		else
@@ -63,7 +70,7 @@ program PuzzleChestOpen(who, container)
 
 	var mec_skill := AP_GetSkill(who, MECHANICS);
 	if (mec_skill > 0)
-		if (mastermind(who))
+		if (mastermind(who, container))
 			PlaySoundEffect(container, 0x0200);
 			PlayObjectCenteredEffect(container, 0x3763, 1, 16);
 			SendViewContainer(who, container);

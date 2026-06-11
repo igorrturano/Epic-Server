@@ -1,0 +1,178 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+use guilds;
+
+include ":tn:cooldown";
+include ":faccao:faccao";
+include ":faccao:membership";
+include ":fls_core:packets";
+include ":ligafaccao:include/coins";
+include ":gumps:/include/gumps";
+include ":gumps:/include/gumps_ex";
+
+// Bardo da Faccao — programa chamado por ligafaccao/main.src
+// params[1]=npc  params[2]=player
+
+const CUSTO_COBRE     := 5;
+const RAIO_AUDIENCIA  := 12;
+const COOLDOWN_S      := 30;
+const MUSICAS_POR_PAG := 14;
+
+function LoadRepertorio()
+    var cfg := ReadConfigFile(":ligafaccao:config/repertorio");
+    if (cfg.errortext)
+        return array{};
+    endif
+    var lista := array{};
+    foreach entry in GetConfigStringKeys(cfg)
+        sleepms(2);
+        var elem := FindConfigElem(cfg, entry);
+        if (!elem) continue; endif
+        var id := CInt(elem.Id);
+        if (id < 0) continue; endif
+        lista.append(struct{
+            "id"   := id,
+            "name" := CStr(elem.Name)
+        });
+    endforeach
+    return lista;
+endfunction
+
+function FraseDescanso()
+    var frases := array{
+        "So deixe-me arrumar uma corda que estourou...",
+        "Minha garganta precisa de um gole, de-me um instante.",
+        "Volto ja, preciso reafinar o alaude.",
+        "Aguarde, aventureiro. Mesmo bardos descansam.",
+        "A musa ainda nao voltou. Paciencia, peco.",
+        "Os dedos ardem. Um momento e estarei pronto."
+    };
+    return frases[RandomInt(frases.size()) + 1];
+endfunction
+
+function MenuMusicas(player, repertorio)
+    var page := 1;
+    var total_pages := CInt((repertorio.size() - 1) / MUSICAS_POR_PAG) + 1;
+    if (total_pages < 1) total_pages := 1; endif
+
+    repeat
+        var gump := GFCreateGump(150, 130);
+        GFResizePic(gump, 0, 0, 9270, 360, 480);
+        GFTextMid(gump, 0, 20, 360, 1153, "Repertorio do Bardo");
+        GFTextMid(gump, 0, 45, 360, 2100, "Escolha uma musica - 5 moedas de cobre");
+
+        var start_i := (page - 1) * MUSICAS_POR_PAG + 1;
+        var end_i   := start_i + MUSICAS_POR_PAG - 1;
+        if (end_i > repertorio.size()) end_i := repertorio.size(); endif
+
+        var y := 80;
+        for i := start_i to end_i
+            GFAddButton(gump, 25, y, 2117, 2118, GF_CLOSE_BTN, 1000 + i);
+            GFTextLine(gump, 55, y - 3, 2100, repertorio[i].name);
+            y += 22;
+        endfor
+
+        GFTextMid(gump, 0, 432, 360, 2100, "Pagina " + page + " de " + total_pages);
+
+        if (page > 1)
+            GFAddButton(gump, 30, 432, 4014, 4015, 1, 1);
+        endif
+        if (page < total_pages)
+            GFAddButton(gump, 312, 432, 4005, 4006, 1, 2);
+        endif
+        GFAddButton(gump, 165, 455, 4017, 4018, GF_CLOSE_BTN, 9999);
+        GFTextLine(gump, 200, 457, 2100, "Cancelar");
+
+        var input := GFSendGump(player, gump);
+        var btn := CInt(input[0]);
+
+        case (btn)
+            0:    return 0;
+            9999: return 0;
+            1:    page := Max(1, page - 1);
+            2:    page := Min(total_pages, page + 1);
+            default:
+                if (btn >= 1001 && btn <= 1000 + repertorio.size())
+                    return repertorio[btn - 1000];
+                endif
+        endcase
+    until (0);
+endfunction
+
+program BardoFaccao(params)
+    var npc    := params[1];
+    var player := params[2];
+    if (!npc || !player) return; endif
+
+    SetObjProperty(npc, "#occupied", 1);
+
+    var guild_id := GetObjProperty(npc, "guild");
+    var guild    := guild_id ? FindGuild(guild_id) : 0;
+
+    if (!guild || !IsMemberOfFaccao(guild, player))
+        PrintTextAbove(npc, "Toco apenas para os meus, peco perdao.");
+        EraseObjProperty(npc, "#occupied");
+        return;
+    endif
+
+    if (GetCooldown(npc, "bardo_cd"))
+        PrintTextAbove(npc, FraseDescanso());
+        EraseObjProperty(npc, "#occupied");
+        return;
+    endif
+
+    if (player.hidden)
+        player.hidden := 0;
+        SendSysMessage(player, "Voce se revelou ao bardo.");
+    endif
+
+    var repertorio := LoadRepertorio();
+    if (repertorio.size() == 0)
+        PrintTextAbove(npc, "Esqueci meu repertorio em casa...");
+        EraseObjProperty(npc, "#occupied");
+        return;
+    endif
+
+    var escolha := MenuMusicas(player, repertorio);
+    if (!escolha)
+        PrintTextAbove(npc, "Como queira.");
+        EraseObjProperty(npc, "#occupied");
+        return;
+    endif
+
+    if (CountCoins(player) < CUSTO_COBRE)
+        PrintTextAbove(npc, "Voce nao tem 5 moedas de cobre.");
+        EraseObjProperty(npc, "#occupied");
+        return;
+    endif
+
+    if (!TakeCoins(player, CUSTO_COBRE))
+        PrintTextAbove(npc, "Erro ao processar pagamento.");
+        EraseObjProperty(npc, "#occupied");
+        return;
+    endif
+
+    // 100% ao bau da faccao
+    var atual := CInt(guild.GetProp("money"));
+    guild.SetProp("money", atual + CUSTO_COBRE);
+    AddReport(guild, "{} tocou '{}' para {}".format(npc.name, escolha.name, player.name));
+
+    PrintTextAbove(npc, "Comeca a tocar a musica.");
+
+    var hex_id := fixPacketLength(hex(escolha.id), 2);
+    var ouvintes := 0;
+    foreach mob in ListMobilesNearLocation(npc.x, npc.y, npc.z, RAIO_AUDIENCIA, npc.realm)
+        sleepms(2);
+        if (mob.npctemplate) continue; endif
+        SendPacket(mob, "6D" + hex_id);
+        ouvintes := ouvintes + 1;
+    endforeach
+    syslog("[BARDO] '{}' (id={}/{}) -> {} ouvintes pagador={}".format(
+        escolha.name, escolha.id, hex_id, ouvintes, player.name));
+
+    SetCooldown(npc, "bardo_cd", COOLDOWN_S);
+    EraseObjProperty(npc, "#occupied");
+    return 1;
+endprogram
