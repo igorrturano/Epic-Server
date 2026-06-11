@@ -1,0 +1,91 @@
+use uo;
+use os;
+use polsys;
+
+include ":gumps:gumps";
+include ":uose:/include/merchant";
+// CreateIteminBackpackFromTemplate vem via :merchants:/include/item_template,
+// puxado transitivamente por :uose:/include/merchant.
+
+// Notificação visual de itens recuperados de vendedores (>7 dias parados).
+// Padrão: ícone pequeno (mesmo do soldo) no canto superior esquerdo, abaixo
+// da notificação de soldo para não conflitar. Ao clicar, entrega os itens
+// pendentes no backpack do jogador (com fallback para o chão).
+// Entrada: params[1] = mobile (passado via start_script)
+
+program gump_returns(params)
+	var mob := (TypeOf(params) == "Array") ? params[1] : params;
+
+	if (!mob || !mob.isA(POLCLASS_MOBILE) || !mob.connected)
+		return;
+	endif
+
+	var pending := GetPendingReturns(mob.serial);
+	if (!pending || !pending.size())
+		EraseObjProperty(mob, "notif_vendor_returns");
+		return;
+	endif
+
+	var gump := GFCreateGump(10, 70);
+	GFAddButton(gump, 0, 0, 0x7D2, 0x7D2, GF_CLOSE_BTN, 1);
+
+	var input := GFSendGump(mob, gump);
+
+	if (input[0] == 1)
+		EntregarPendentes(mob, pending);
+	endif
+
+	EraseObjProperty(mob, "notif_vendor_returns");
+endprogram
+
+function EntregarPendentes(mob, pending)
+	var entregues := 0;
+	var falhas := 0;
+	var por_vendor := dictionary;  // npc_name -> array de nomes de itens entregues
+
+	foreach entrada in pending
+		var template := entrada.template;
+		if (!template)
+			falhas += 1;
+			sleepms(2);
+			continue;
+		endif
+		var item := CreateIteminBackpackFromTemplate(mob, template);
+		if (item && item != error)
+			entregues += 1;
+
+			var item_nome := ResolveSellerCardLabel(template);
+			if (item_nome == "" || item_nome == error)
+				item_nome := "(item sem nome)";
+			endif
+			var vendor_nome := entrada.npc_name;
+			if (!vendor_nome || vendor_nome == error)
+				vendor_nome := "vendedor desconhecido";
+			endif
+
+			if (!por_vendor[vendor_nome])
+				por_vendor[vendor_nome] := array{};
+			endif
+			por_vendor[vendor_nome].append(item_nome);
+		else
+			falhas += 1;
+		endif
+		sleepms(20);
+	endforeach
+
+	ClearPendingReturns(mob.serial);
+
+	PlaySoundEffect(mob, 0x038);
+
+	if (entregues > 0)
+		var vendor_keys := por_vendor.Keys();
+		foreach vendor_nome in vendor_keys
+			var itens := por_vendor[vendor_nome];
+			SendSysMessage(mob, "Do vendor {}: os itens que não foram vendidos nos últimos 7 dias e retornaram foram... {}".format(vendor_nome, ", ".join(itens)));
+			sleepms(20);
+		endforeach
+	endif
+	if (falhas > 0)
+		SendSysMessage(mob, "{} item(ns) não puderam ser recuperados.".format(falhas));
+	endif
+endfunction

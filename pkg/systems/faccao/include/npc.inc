@@ -84,12 +84,14 @@ endfunction
 function _ListNPCLiga()
     return array{
         struct{ "template" := ":merchants:merchantfaccao",    "price" := 10, "name" := "Vendedor da Faccao"    },
-        struct{ "template" := ":merchants:curandeirofaccao",  "price" := 10, "name" := "Curandeiro"            },
-        struct{ "template" := ":merchants:gemvendorfaccao",   "price" := 10, "name" := "Comprador de Gemas"    },
-        struct{ "template" := ":merchants:talkerfaccao",      "price" := 10, "name" := "Arauto"                },
-        struct{ "template" := ":merchants:rumorfaccao",       "price" := 10, "name" := "Arauto de Rumores"     },
-        struct{ "template" := ":merchants:bibliotecariofaccao","price":= 10, "name" := "Bibliotecario"         },
-        struct{ "template" := ":merchants:stablemasterfaccao", "price":= 10, "name" := "Tratador de Animais"   }
+        // Desabilitados por ora — templates ainda nao implementados:
+        // struct{ "template" := ":merchants:curandeirofaccao",  "price" := 10, "name" := "Curandeiro"            },
+        // struct{ "template" := ":merchants:gemvendorfaccao",   "price" := 10, "name" := "Comprador de Gemas"    },
+        // struct{ "template" := ":merchants:talkerfaccao",      "price" := 10, "name" := "Arauto"                },
+        // struct{ "template" := ":merchants:rumorfaccao",       "price" := 10, "name" := "Arauto de Rumores"     },
+        // struct{ "template" := ":merchants:bibliotecariofaccao","price":= 10, "name" := "Bibliotecario"         },
+        // struct{ "template" := ":merchants:stablemasterfaccao", "price":= 10, "name" := "Tratador de Animais"   },
+        struct{ "template" := ":merchants:bardofaccao",        "price":= 10, "name" := "Bardo"                 }
     };
 endfunction
 
@@ -226,14 +228,26 @@ function listNPC(guild)
    var npcs := guild.GetProp("npcs");
    if (!npcs) npcs := array{}; endif
 
-   // Validação: Se houver mais de 4 NPCs, são dados corrompidos
-   if (npcs.size() > 4)
+   // Validação: Se houver mais de 5 NPCs, são dados corrompidos
+   if (npcs.size() > 5)
       npcs := array{
          struct{ "template" := ":epicai:guardafaccaofraco",   "price" := 25,  "name" := "Guarda Recruta (Fraco)",      "equipment" := array{} },
          struct{ "template" := ":epicai:guardafaccaomedio",   "price" := 70,  "name" := "Guarda Veterano (Medio)",     "equipment" := array{} },
          struct{ "template" := ":epicai:guardafaccaoforte",   "price" := 100, "name" := "Guarda Elite (Forte)",         "equipment" := array{} },
-         struct{ "template" := ":merchants:merchantfaccao",   "price" := 10,  "name" := "Vendedor da Faccao",           "equipment" := array{} }
+         struct{ "template" := ":merchants:merchantfaccao",   "price" := 10,  "name" := "Vendedor da Faccao",           "equipment" := array{} },
+         struct{ "template" := ":merchants:bardofaccao",      "price" := 10,  "name" := "Bardo",                        "equipment" := array{} }
       };
+      guild.SetProp("npcs", npcs);
+   endif
+
+   // Auto-inject do bardo em guilds de jogador antigas que ainda nao o tem.
+   // Faccoes de staff foram tratadas acima (return em _ListNPCByStaffTipo).
+   var has_bardo := 0;
+   foreach _t in (npcs)
+      if (_t.template == ":merchants:bardofaccao") has_bardo := 1; break; endif
+   endforeach
+   if (!has_bardo)
+      npcs.append(struct{ "template" := ":merchants:bardofaccao", "price" := 10, "name" := "Bardo", "equipment" := array{} });
       guild.SetProp("npcs", npcs);
    endif
 

@@ -201,6 +201,15 @@ program MerchantMain()
 			endif
 		endif
 
+		// Guard cross-realm: NPC nunca opera fora do realm canonico da guild.
+		if (EnforceGuildRealm())
+			MerchLog("REALM", "teleportado de volta ao realm canonico da guild");
+			following := 0;
+			wait_time := 1;
+			sleepms(100);
+			continue;
+		endif
+
 		// Controle de território: staff usa rect hardcoded, player usa rect da guild.
 		if (guild)
 			if (GetObjProperty(me, "tipo_faccao") == "staff")
@@ -222,8 +231,7 @@ program MerchantMain()
 
 				if (!fix_location && !_target_inside)
 					var _center := GetGuildCenter(guild);
-					if (_center)
-						RunTowardLocation(_center.x, _center.y);
+					if (MoveOrTeleportToGuildPoint(_center))
 						wait_time := 0;
 					endif
 				endif

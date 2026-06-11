@@ -37,7 +37,9 @@ function _CalcRelativeScale(graphic, factor)
     return struct{ height := h, width := w };
 endfunction
 
-program drinkScalePotion(who, potion)
+program drinkScalePotion(params)
+	var who := params[1];
+	var potion := params[2];
     if (!Accessible(who, potion))
         return;
     endif

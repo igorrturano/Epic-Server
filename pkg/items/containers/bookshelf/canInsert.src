@@ -22,16 +22,12 @@ program CanInsert(mobile, container, move_type, insert_type, item, existing_stac
 				aux := aux.container;
 			endwhile
 			var mobWrapper := MobileWrapper(mobile);
-			if (aux == mobile && mobWrapper.HasFreeHand())
+			if (aux == mobile)
 				return 1;
 			endif
 
 			if (mobWrapper.IsMounted())
 				SendSysMessage(mobile, "Voce nao pode fazer isto montado.");
-				return 0;
-			endif
-
-			if (!mobWrapper.HasFreeHand())
 				return 0;
 			endif
 

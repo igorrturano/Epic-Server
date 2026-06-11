@@ -28,7 +28,7 @@ const MOEDAS := SESTERTIUS;
 const FILTRO_TEXTO := "texto";
 const FILTRO_CATEGORIA := "categoria";
 const MAXIMO_ITEM_PESSOA := 12;
-const MAXIMO_ITEMS := 100;
+const MAXIMO_ITEMS := 200;
 const MAXIMO_VALOR_ITEM := 10000;
 
 var item_cfg := ReadConfigFile(":*:itemdesc");
@@ -49,17 +49,15 @@ var item_types := dictionary{ "Armaduras" -> 7,
 							  "Elmos/Mascaras" -> 18,
 							  "Componentes" -> 19  };
 
+// NOTA: scrolls de receita (objtypes 0xff990, 0xfe995..0xfea02 em
+// :recipes:itemdesc.cfg) eram listados aqui e caíam em "Pergaminhos", mas
+// como o elseif seguinte checa `receitas[objtype]` -> "Receitas", a
+// categoria correta deles é Receitas. Por isso o range não está mais aqui.
+// Mantenha esta lista apenas para pergaminhos LEGACY que não estão em
+// :research:itemdesc.cfg nem em :recipes:itemdesc.cfg.
 var pergaminhos := array{ 0xE34,
 						  0x6116,
-						  0xff990,
-						  0xff991,
-						  0xff992,
-						  0xff994,
-						  0xff995,
-						  0xfe996,
-						  0xfe997,
-						  0xfe998,  // pergaminhos Alquimia
-						
+
 						  0x2050,
 						  0x2051,
 						  0x2052,
@@ -123,7 +121,11 @@ program HandleMerchant(params)
 	case (nerve_name)
 		"ItemGiven":
 			if (!HandleItemGiven(npc, player, item))
-				MoveItemToContainer(npc, player.backpack);
+				// Fallback: HandleItemGiven recusou — devolve o item ao player.
+				// Versão anterior passava `npc` no lugar de `item` (no-op silencioso).
+				if (item && item.serial)
+					MoveItemToContainer(item, player.backpack);
+				endif
 			endif
 		"SeeEvent": HandleSeeEvent(npc, player);
 		"DblClick": DoWithdraw(npc, player); DoPurchaseCmd(npc, player);
@@ -211,6 +213,11 @@ function BuildSellingItensList(npc, player,byref filters)
 
 		infoItem.+serial := dadosItem;
 		infoItem.+item := conjuntoDados[2];
+		// item.desc é genérico para receitas/pergaminhos. Resolvemos um label
+		// específico (lookup em :recipes:recipes.cfg ou no SpellRegistry) para
+		// o card do vendor não mostrar 5 receitas idênticas como "instrucoes
+		// de fabricacao de metal".
+		infoItem.item.desc := ResolveSellerCardLabel(infoItem.item);
 		infoItem.+infoCusto := conjuntoDados[1];
 
 		var donoDoItem := SystemFindObjectBySerial(infoItem.infoCusto.seller, SYSFIND_SEARCH_OFFLINE_MOBILES);
@@ -236,6 +243,8 @@ function BuildSellingItensList(npc, player,byref filters)
 		endif
 
 		infoItem.+descVenda := GetDetails(infoItem.item, player, infoItem.infoCusto.desc);
+		// Se for container vendido com conteúdo capturado, anexa lista no tooltip.
+		infoItem.descVenda := infoItem.descVenda + FormatContainerContentsPreview(infoItem.item);
 		infoItem.+nomeVendedor := GetPlayerNameBySerial(infoItem.infoCusto.seller);
 		infoItem.infoCusto.cost_name := "Sestertius";
 
@@ -252,8 +261,16 @@ endfunction
 function DoPurchaseCmd(npc, player)
 	var canceled := 0;
 	var filtros := struct;
+
+	// GC lazy: arquiva itens com mais de 7 dias para a fila de devolução do seller.
+	// Só roda 1x/h por NPC para não pesar.
+	if (!GetCooldown(npc, "merchant_gc"))
+		SetCooldown(npc, "merchant_gc", 3600);
+		RemoveOldItemsForSale(npc);
+	endif
+
 	var session := BuildSession(npc, player);
-	
+
 	if (!player.concealed)
 		PrintTextAbove(player, "O que tem a venda?", SSM_FAIL);
 		PrintTextAbove(npc, array{ "Olhe só este produto...", "Bem-vindo, vamos ver...",
@@ -409,7 +426,7 @@ function removeItemMerchant(npc, player,byref session, input)
 		endif
 		ItensRevogados.Insert(cost.seller, 1);
 		if (ItensRevogados == error)
-			PrintTextAbove(npc, "Error" + ItensRevogados);
+			SendSysMessageEx(player, "Falha ao registrar confisco. Avise um GM.", SSM_FAIL);
 		else
 			SetObjProperty(npc, "ItensRevogados", itensRevogados);
 		endif
@@ -426,15 +443,17 @@ function removeItemMerchant(npc, player,byref session, input)
 
 	RemoveItemForSale(npc, input, 0, confiscar);
 	var purchase := CreateItemInBackpackFromTemplate(player, selling);
-	if (purchase == error)
+	if (purchase == error || !purchase)
 		purchase := CreateItemAtLocation(player.x, player.y, player.z, selling, selling.amount);
-		if (purchase == error)
-			SendSysMessageEx(player, "Error - Unable to create item! ->" + purchase.errortext);
+		if (purchase == error || !purchase)
+			SendSysMessageEx(player, "Falha catastrófica ao recriar o item. Avise um GM.", SSM_FAIL);
 		else
-			PrintTextAbove(npc, "Eu não fui capaz de colocar o item na sua bolsa. Coloquei aos seus pés entao.");
+			PrintTextAbove(npc, "Eu não fui capaz de colocar o item na sua bolsa. Coloquei aos seus pés então.");
 		endif
 	endif
-	EraseObjProperty(purchase, FILTRO_CATEGORIA);
+	if (purchase && purchase != error)
+		EraseObjProperty(purchase, FILTRO_CATEGORIA);
+	endif
 
 	var return_amt := CInt(cdbl(cost.cost_amt * (selling.amount / cost.lote)) * cdbl(imposto));
 	if (return_amt >= 1)
@@ -484,7 +503,19 @@ function DoPurchase(npc, player,byref session, input)
 	selling.amount := amount * cost.lote;
 	RemoveItemForSale(npc, input, selling.amount);
 	var purchase := CreateItemInBackpackFromTemplate(player, selling);
-	EraseObjProperty(purchase, FILTRO_CATEGORIA);
+	if (purchase == error || !purchase)
+		// Backpack cheio/sem espaço: cai no chão para o player não perder
+		// o item já pago e o seller já creditado.
+		purchase := CreateItemAtLocation(player.x, player.y, player.z, selling, selling.amount);
+		if (purchase == error || !purchase)
+			SendSysMessageEx(player, "Falha ao entregar o item comprado. Avise um GM com este código: {}".format(Hex(cost.seller)), SSM_FAIL);
+		else
+			PrintTextAbove(npc, "Sua bolsa estava cheia. Coloquei o item aos seus pés.", SSM_INFO);
+		endif
+	endif
+	if (purchase && purchase != error)
+		EraseObjProperty(purchase, FILTRO_CATEGORIA);
+	endif
 	SetMerchantLog(npc, player.name, selling.desc, GetPlayerNameBySerial(cost.seller), cost_amnt);
 	PlaySoundEffectPrivate(player, 0x37, player); // some gold
 	PreparaLojaGump(npc, player, session);
@@ -641,12 +672,19 @@ function AddItemToSell(npc, player, item)
 		return 1;
 	endif
 
+	// Falha em AddItemForSale (tipicamente: pool de slots esgotado). Devolvemos
+	// o imposto cobrado; o item original volta ao backpack pelo fallback do
+	// HandleMerchant ("ItemGiven" -> MoveItemToContainer) quando esta função
+	// retornar falsy.
 	if (!player.concealed)
-		PrintTextAbove(npc, "Me desculpe mas não poderei vender isto para você, tome seu dinheiro de volta.",
+		PrintTextAbove(npc, "Desculpe, não consegui registrar a venda. Tome seu item de volta.",
 				   SSM_FAIL);
 	endif
-	CreateItemInBackpack(player, MOEDAS, total_imposto);
-	SendSysMessageEx(player, "Error =>" + result.errortext);
+	if (total_imposto > 0)
+		CreateItemInBackpack(player, MOEDAS, total_imposto);
+		SendSysMessageEx(player, "Imposto de {} moedas devolvido.".format(total_imposto), SSM_INFO);
+	endif
+	return 0;
 endfunction
 
 function DoWithdraw(npc, player)
