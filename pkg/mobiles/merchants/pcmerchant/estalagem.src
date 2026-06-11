@@ -147,11 +147,31 @@ program MerchantMenu(params)
 		SendSysMessageEx(player, "Escolha a PORTA do quarto.", SSM_REQUEST);
 		var porta := Target(player);
 
-		if (!porta.isDoor())
+		if (porta == error || !porta.isDoor())
 			SendSysMessageEx(player, "Alvo invalido.", SSM_FAIL);
 		else
+			var doors_arr := array{ porta.serial };
+			SetObjProperty(porta, PROPNAME_INDESTRUTIVEL, 1);
+
+			while (YesNo(player, "Adicionar outra porta a este quarto?"))
+				SendSysMessageEx(player, "Escolha a PORTA adicional.", SSM_REQUEST);
+				var porta_extra := Target(player);
+				if (porta_extra == error || !porta_extra.isDoor())
+					SendSysMessageEx(player, "Alvo invalido, ignorando.", SSM_FAIL);
+					continue;
+				endif
+				if (porta_extra.serial in doors_arr)
+					SendSysMessageEx(player, "Esta porta ja foi adicionada.", SSM_FAIL);
+					continue;
+				endif
+				doors_arr.append(porta_extra.serial);
+				SetObjProperty(porta_extra, PROPNAME_INDESTRUTIVEL, 1);
+				SendSysMessageEx(player, "Porta adicionada (" + doors_arr.size() + " no total).", SSM_INFO);
+			endwhile
+
 			var room := struct;
-			room.+door := porta.serial;
+			room.+door := doors_arr[1];
+			room.+doors := doors_arr;
 			SendSysMessageEx(player, "Selecione o centro com mais visibilidade dentro do quarto.");
 			var cent := TargetCoordinates(player);
 			room.+centro := { cent.x, cent.y, cent.z, cent.realm };
@@ -162,14 +182,13 @@ program MerchantMenu(params)
 			endif
 			room.+custo := cint(RequestGump(player, "Quanto vai ser cobrado em moedas de cobre?", 0, 1));
 			room.+name := cstr(RequestGump(player, "Qual o nome do quarto?"));
-			SendSysMessage(player, "O quarto foi cadastrado.");
+			SendSysMessage(player, "O quarto foi cadastrado com " + doors_arr.size() + " porta(s).");
 			var quartos := GetObjProperty(npc, "quartos");
 			if (quartos == error)
 				quartos := array;
 			endif
 			quartos.append(room);
 			SetObjProperty(npc, "quartos", quartos);
-			SetObjProperty(porta, PROPNAME_INDESTRUTIVEL, 1);
 		endif
 	elseif (input[0] == 100) // trocar fechadura
 		var yes := yesno(player, "O chaveiro vai cobrar 1 moedas, deseja continuar? ");
@@ -183,10 +202,18 @@ program MerchantMenu(params)
 			else
 				var lockid := AllocLockId();
 				var key := CreateItemInBackpack(player, "ironkey", 1);
-				var door := SystemFindObjectBySerial(quartos[meuquarto].door);
-				SetObjProperty(door, "LockId", lockid);
-				door.locked := 1;
 				SetObjProperty(key, "LockId", lockid);
+				var doors_list := quartos[meuquarto].doors;
+				if (doors_list == error)
+					doors_list := array{ quartos[meuquarto].door };
+				endif
+				foreach door_serial in doors_list
+					var door := SystemFindObjectBySerial(door_serial);
+					if (door != error)
+						SetObjProperty(door, "LockId", lockid);
+						door.locked := 1;
+					endif
+				endforeach
 			endif
 		endif
 	elseif (input[0] == 400) // entregar quarto
@@ -208,8 +235,16 @@ program MerchantMenu(params)
 					DestroyRentItens(cent[4], cent[5], cent[6], room_realm);
 				endif
 			endif
-			var door := SystemFindObjectBySerial(quarto.door);
-			Eraseobjproperty(door, "LockId");
+			var doors_list := quarto.doors;
+			if (doors_list == error)
+				doors_list := array{ quarto.door };
+			endif
+			foreach door_serial in doors_list
+				var door := SystemFindObjectBySerial(door_serial);
+				if (door != error)
+					Eraseobjproperty(door, "LockId");
+				endif
+			endforeach
 			quartos[meuquarto].inquilino := 0;
 			SetObjProperty(npc, "quartos", quartos);
 
@@ -232,8 +267,16 @@ program MerchantMenu(params)
 				// 		DestroyItem(item);
 				// 	endforeach
 				// endforeach
-				var door := SystemFindObjectBySerial(quarto.door);
-				Eraseobjproperty(door, "LockId");
+				var doors_list := quarto.doors;
+				if (doors_list == error)
+					doors_list := array{ quarto.door };
+				endif
+				foreach door_serial in doors_list
+					var door := SystemFindObjectBySerial(door_serial);
+					if (door != error)
+						Eraseobjproperty(door, "LockId");
+					endif
+				endforeach
 				quartos[i].inquilino := 0;
 				SetObjProperty(npc, "quartos", quartos);
 				SendSysMessageEx(player, "Player " + player2.name + " do quarto " + quarto.name
@@ -315,7 +358,19 @@ program MerchantMenu(params)
 	elseif (input[0] < 100 && input[0] >= 1) // alugar quarto
 
 		if (souInquilino)
-			SendSysMessageEx(player, "Voce ja tem um quarto.");
+			SendSysMessageEx(player, "Voce ja tem um quarto nesta estalagem.");
+			return 1;
+		endif
+
+		// Bloqueio global: 1 quarto por player no mundo todo. Varre todos os
+		// estalajadeiros cadastrados em InnKeeper e recusa se o player ja for
+		// inquilino em algum outro. Para liberar, ele precisa entregar o quarto
+		// antigo (botao "Entregar Quarto" do estalajadeiro original).
+		var outraEstalagem := _AchaQuartoExistente(player.serial, npc.serial);
+		if (outraEstalagem != "")
+			SendSysMessageEx(player,
+				"Voce ja possui um quarto em '" + outraEstalagem + "'. Entregue-o antes de alugar outro.",
+				SSM_FAIL);
 			return 1;
 		endif
 
@@ -377,10 +432,18 @@ program MerchantMenu(params)
 				SetObjProperty(npc, "quartos", quartos); // seta prop
 				var lockid := AllocLockId();
 				var key := CreateItemInBackpack(player, "ironkey", 1);
-				SetObjProperty(quartos[input[0]].door, "LockId", lockid);
-				var porta := SystemFindObjectBySerial(quartos[input[0]]);
-				porta.locked := 1;
 				SetObjProperty(key, "LockId", lockid);
+				var doors_list := quartos[input[0]].doors;
+				if (doors_list == error)
+					doors_list := array{ quartos[input[0]].door };
+				endif
+				foreach door_serial in doors_list
+					var porta := SystemFindObjectBySerial(door_serial);
+					if (porta != error)
+						SetObjProperty(porta, "LockId", lockid);
+						porta.locked := 1;
+					endif
+				endforeach
 			endif
 		endif
 
@@ -661,4 +724,38 @@ function innerKeeperOpt(npc, player)
 
 	endforeach
 
+endfunction
+
+// Retorna o nome do NPC estalajadeiro onde o player ja possui quarto, ou
+// string vazia se nao tiver em lugar nenhum. Usado pra bloquear aluguel
+// duplicado entre estalagens. `exclude_npc_serial` pula o NPC corrente
+// (que ja foi checado via souInquilino) pra evitar dupla varredura.
+function _AchaQuartoExistente(player_serial, exclude_npc_serial)
+	var innkeepers := GetGlobalProperty("InnKeeper");
+	if (innkeepers == error || TypeOf(innkeepers) != "Array")
+		return "";
+	endif
+	foreach serial in innkeepers
+		if (CInt(serial) == CInt(exclude_npc_serial))
+			sleepms(2);
+			continue;
+		endif
+		var other := SystemFindObjectBySerial(CInt(serial));
+		if (other == error)
+			sleepms(2);
+			continue;
+		endif
+		var quartos := GetObjProperty(other, "quartos");
+		if (quartos == error || TypeOf(quartos) != "Array")
+			sleepms(2);
+			continue;
+		endif
+		foreach q in quartos
+			if (CInt(q.inquilino) == CInt(player_serial))
+				return other.name;
+			endif
+		endforeach
+		sleepms(2);
+	endforeach
+	return "";
 endfunction

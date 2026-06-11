@@ -191,6 +191,16 @@ program PanteraCazadorMain()
                     wait_time := 3;
                     break;
                 endif
+                // Nao persegue alvo cross-realm — evita pantera atravessar moongate
+                // atras de inimigo e sumir no realm errado.
+                if (opponent.realm && opponent.realm != me.realm)
+                    opponent := 0;
+                    SetOpponent(0);
+                    SetWarMode(0);
+                    state := 0;
+                    wait_time := 3;
+                    break;
+                endif
                 var dist_f := Distance(me, opponent);
                 if (dist_f > 14)
                     opponent := 0;
@@ -209,7 +219,8 @@ program PanteraCazadorMain()
 
             2: // FERAL — atacar qualquer player proximo dentro do territorio
                 if (guild && !inGuildRect(guild, me, 4))
-                    // Saiu do territorio: resetar para seguir master (se houver) ou aguardar
+                    // Saiu do territorio (inclusive cross-realm): resetar para seguir
+                    // master (se houver) ou aguardar.
                     opponent := 0;
                     SetOpponent(0);
                     SetWarMode(0);

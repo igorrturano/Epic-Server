@@ -1,0 +1,33 @@
+use uo;
+
+program command_tintainfinita(who)
+	SendSysMessage(who, "Selecione a tina/balde com tinta:");
+
+	var alvo := Target(who, TGTOPT_NOCHECK_LOS);
+	if (!alvo)
+		SendSysMessage(who, "Cancelado.");
+		return;
+	endif
+
+	if (alvo.objtype != 0xFAB && alvo.objtype != 0x5EBE)
+		SendSysMessage(who, "Isso nao e uma tina de tinta.");
+		return;
+	endif
+
+	var fullness := GetObjProperty(alvo, "fullness");
+	if (!fullness || fullness < 1)
+		SendSysMessage(who, "Esta tina nao tem tinta carregada. Use uma pocao de tinta primeiro.");
+		return;
+	endif
+
+	if (GetObjProperty(alvo, "tintainfinita"))
+		EraseObjProperty(alvo, "tintainfinita");
+		SetObjProperty(alvo, "fullness", 10);
+		alvo.name := "balde com 10 cargas de tinta";
+		SendSysMessage(who, "Tinta nao esta mais infinita.");
+	else
+		SetObjProperty(alvo, "tintainfinita", 1);
+		alvo.name := "Balde de tinta";
+		SendSysMessage(who, "Tinta agora esta infinita.");
+	endif
+endprogram

@@ -7,10 +7,10 @@ include ":gumps:epicGumps";
 include "include/say";
 include "include/client";
 include ":chestspawn:treasurechest";
+include ":chestspawn:include/trancaEspecial";
 
 // Constantes para botões de categoria
 const BTN_BAUS := 201;
-const BTN_BOLSAS := 202;
 const BTN_CESTOS := 203;
 const BTN_ESTANTES := 204;
 const BTN_BARRIS := 205;
@@ -18,14 +18,13 @@ const BTN_TUMBAS := 206;
 
 // Constantes para identificação de menus
 const MENU_BAUS := 0;
-const MENU_BOLSAS := 1;
-const MENU_CESTOS := 2;
-const MENU_ESTANTES := 3;
-const MENU_BARRIS := 4;
-const MENU_TUMBAS := 5;
+const MENU_CESTOS := 1;
+const MENU_ESTANTES := 2;
+const MENU_BARRIS := 3;
+const MENU_TUMBAS := 4;
 
-// Estado dos botões de categoria (1 = ativo, 0 = inativo)
-var category_button_states := array{ 1, 0, 0, 0, 0, 0 };
+// Estado dos botões de categoria (1 = ativo, 0 = inativo) — 5 categorias
+var category_button_states := array{ 1, 0, 0, 0, 0 };
 
 // Cache de arrays de gráficos por categoria (otimização de memória)
 var CACHED_CATEGORY_GRAPHICS := dictionary;
@@ -104,14 +103,7 @@ program epicchest(who)
 		var is_mimic := CInt(res[50]); // Checkbox value is 0 or 1
 		var mimic_chance := 0;
 		if (is_mimic)
-			// Get the actual text value entered by the user
-			mimic_chance := CInt(GFExtractData(res, 51)); // Get text entry value for mimic chance
-			if (mimic_chance < 0)
-				mimic_chance := 0;
-			endif
-			if (mimic_chance > 100)
-				mimic_chance := 100;
-			endif
+			mimic_chance := ClampPct(GFExtractData(res, 51)); // Get text entry value for mimic chance
 		endif
 
 		var is_puzzle := CInt(res[60]); // Checkbox value for puzzle chest (ID 60)
@@ -129,6 +121,11 @@ program epicchest(who)
 
 		var is_buried := CInt(res[70]); // Checkbox for buried chest (ID 70)
 
+		// Baú de Tranca Especial
+		var tranca_enabled           := CInt(res[80]);                                                // Checkbox (ID 80)
+		var tranca_chance            := ClampPct(GFExtractData(res, 81), MIN_TRANCA_CHANCE, 100);     // ID 81 — piso 10%
+		var tranca_mastermind_chance := ClampPct(GFExtractData(res, 82));                             // ID 82
+
 		var spawner := CreateItemAtLocation(who.x, who.y, who.z, 0x9F16, 1, who.realm);
 		if (spawner)
 			SetObjProperty(spawner, "epic_level", level);
@@ -140,6 +137,9 @@ program epicchest(who)
 			SetObjProperty(spawner, "epic_is_puzzle", is_puzzle);
 			SetObjProperty(spawner, "epic_puzzle_limit_count", puzzle_limit_count);
 			SetObjProperty(spawner, "epic_is_buried", is_buried);
+			SetObjProperty(spawner, "epic_tranca_enabled", tranca_enabled);
+			SetObjProperty(spawner, "epic_tranca_chance", tranca_chance);
+			SetObjProperty(spawner, "epic_tranca_mastermind_chance", tranca_mastermind_chance);
 			
 			// Save selected chest graphics
 			if (selected_chest_graphics.size() > 0)
@@ -283,7 +283,7 @@ function OpenChestGallery(who, previous_selected_graphics)
 endfunction
 
 function CreateEpicChestGump(who, selected_chest_graphics)
-	var gump := GFECreateGump("Epic! Configuração de Baús", 480, 700);
+	var gump := GFECreateGump("Epic! Configuração de Baús", 480, 800);
 
 	var y_pos := 80;
 	var x_label := 30;
@@ -389,7 +389,7 @@ function CreateEpicChestGump(who, selected_chest_graphics)
 	GFTextLine(gump, x_label + 25, y_pos, 1153, "Gerar como Mímico?");
 	y_pos += 25;
 	GFTextLine(gump, x_label + 20, y_pos, 1153, "Chance de Mímico (%):");
-	GFTextEntry(gump, x_options_start, y_pos, 60, 20, 1153, "10", 51); // ID 51 for text entry
+	GFTextEntry(gump, x_options_start, y_pos, 60, 20, 1153, CStr(DEFAULT_MIMIC_CHANCE), 51); // ID 51 for text entry
 	y_pos += 30;
 
 	GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
@@ -409,6 +409,20 @@ function CreateEpicChestGump(who, selected_chest_graphics)
 	// --- Buried Chest Options ---
 	GFCheckbox(gump, x_label, y_pos, 210, 211, 0, 70); // ID 70 for buried chest
 	GFTextLine(gump, x_label + 25, y_pos, 1153, "Gerar como Baú Enterrado? (Requer Pá para desenterrar)");
+	y_pos += 30;
+
+	GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
+	y_pos += 20;
+
+	// --- Baú de Tranca Especial ---
+	GFCheckbox(gump, x_label, y_pos, 210, 211, 1, 80); // ID 80 — default ligado
+	GFTextLine(gump, x_label + 25, y_pos, 1153, "Habilitar Baú de Tranca Especial?");
+	y_pos += 25;
+	GFTextLine(gump, x_label + 20, y_pos, 1153, "Chance de Spawn (%, mín " + MIN_TRANCA_CHANCE + "):");
+	GFTextEntry(gump, x_options_start, y_pos, 60, 20, 1153, CStr(DEFAULT_TRANCA_CHANCE), 81); // ID 81 — piso MIN_TRANCA_CHANCE
+	y_pos += 25;
+	GFTextLine(gump, x_label + 20, y_pos, 1153, "Chance de Mastermind dentro dela (%):");
+	GFTextEntry(gump, x_options_start + 80, y_pos, 60, 20, 1153, CStr(DEFAULT_TRANCA_MASTERMIND_CHANCE), 82); // ID 82 — resto = pinos
 	y_pos += 30;
 
 	GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
@@ -439,8 +453,6 @@ function GetCategoryGraphics(category)
 	case (category)
 		MENU_BAUS:
 			category_name := "Chest";
-		MENU_BOLSAS:
-			category_name := "Bag";
 		MENU_CESTOS:
 			category_name := "Crate";
 		MENU_ESTANTES:
@@ -484,12 +496,11 @@ endfunction
 // Atualiza o estado dos botões de categoria e retorna o menu correspondente
 function UpdateCategoryState(button_id)
 	case (button_id)
-		BTN_BAUS:     category_button_states := array{ 1, 0, 0, 0, 0, 0 }; return MENU_BAUS;
-		BTN_BOLSAS:   category_button_states := array{ 0, 1, 0, 0, 0, 0 }; return MENU_BOLSAS;
-		BTN_CESTOS:   category_button_states := array{ 0, 0, 1, 0, 0, 0 }; return MENU_CESTOS;
-		BTN_ESTANTES: category_button_states := array{ 0, 0, 0, 1, 0, 0 }; return MENU_ESTANTES;
-		BTN_BARRIS:   category_button_states := array{ 0, 0, 0, 0, 1, 0 }; return MENU_BARRIS;
-		BTN_TUMBAS:   category_button_states := array{ 0, 0, 0, 0, 0, 1 }; return MENU_TUMBAS;
+		BTN_BAUS:     category_button_states := array{ 1, 0, 0, 0, 0 }; return MENU_BAUS;
+		BTN_CESTOS:   category_button_states := array{ 0, 1, 0, 0, 0 }; return MENU_CESTOS;
+		BTN_ESTANTES: category_button_states := array{ 0, 0, 1, 0, 0 }; return MENU_ESTANTES;
+		BTN_BARRIS:   category_button_states := array{ 0, 0, 0, 1, 0 }; return MENU_BARRIS;
+		BTN_TUMBAS:   category_button_states := array{ 0, 0, 0, 0, 1 }; return MENU_TUMBAS;
 		default:      return MENU_BAUS;
 	endcase
 endfunction
@@ -517,13 +528,13 @@ function CreateChestGalleryGumpWithCategories(who, page, selected_chests, max_se
 	GFTextLine(gump, 33, 8, 53, "Galeria de Baús - Selecione até " + max_selection);
 	
 	// Botões de navegação por categoria (movido de y=50 para y=30)
-	var cat_texts := array{ "Baús", "Bolsas", "Caixas", "Estantes", "Barris", "Túmulos" };
-	var cat_buttons := array{ BTN_BAUS, BTN_BOLSAS, BTN_CESTOS, BTN_ESTANTES, BTN_BARRIS, BTN_TUMBAS };
-	
+	var cat_texts := array{ "Baús", "Caixas", "Estantes", "Barris", "Túmulos" };
+	var cat_buttons := array{ BTN_BAUS, BTN_CESTOS, BTN_ESTANTES, BTN_BARRIS, BTN_TUMBAS };
+
 	var cat_x := 30;
 	var cat_y := 30;
-	
-	for i := 1 to 6
+
+	for i := 1 to 5
 		var btn_gfx := 2151; // Botão normal (cinza)
 		var text_color := 53; // Texto normal (cinza escuro)
 		

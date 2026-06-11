@@ -17,6 +17,7 @@ include "include/string";
 include "include/noiseAlert";
 include ":merchants:citizen/include/citizenWitness";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":chestspawn:include/trancaEspecial";
 
 program skill_lockpicking(me, lockpick)
 	EraseObjProperty(me, "IsMeditating");
@@ -177,12 +178,24 @@ function PickTreasureChest(me, lockpick, chest)
 
 	// Minigame sorteado no momento de criação do baú
 	if (GetObjProperty(chest, "minigame_lock"))
+		if (IsTrancaEspecial(chest))
+			TrancaDebug("=== LOCKPICKING DETECTOU minigame_lock ===");
+			TrancaDebug("Player: " + me.name + " | Chest: " + Hex(chest.objtype) + " serial=" + chest.serial);
+			TrancaDebug("Skill MECHANICS efetiva: " + AP_GetSkill(me, MECHANICS) + " | True: " + AP_GetTrueSkill(me, "MECHANICS"));
+			TrancaDebug("Diff: " + diff + " | Level chest: " + GetObjProperty(chest, "level") + " | Conhecimento mod: " + diffmod, me);
+		endif
 		SendSysMessageEx(me, "Esta fechadura é diferente... Algo a torna mais difícil de abrir.", SSM_INFO);
 		if (mini_game(me, diff, AP_GetSkill(me, MECHANICS), chest))
+			if (IsTrancaEspecial(chest))
+				TrancaDebug("=== SUCESSO! Chest destrancado ===");
+			endif
 			EraseObjProperty(chest, "minigame_lock");
 			_UnlockChest(me, chest, grantsSkill);
 			return 1;
 		else
+			if (IsTrancaEspecial(chest))
+				TrancaDebug("=== FALHA! Chest não foi destrancado ===");
+			endif
 			_MarkChestFailed(me, chest);
 			return 0;
 		endif
