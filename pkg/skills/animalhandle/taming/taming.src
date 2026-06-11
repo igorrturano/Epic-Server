@@ -241,6 +241,7 @@ function tamecreature(who)
 			SetObjProperty(targ, "AntigoTreinadorID", who.serial);
 			SetObjProperty(targ, "Fidelizar?", "nao");
 			SetObjproperty(targ, "Cruzar", "nao");
+			SetObjproperty(targ, "Original_serial", targ.serial);
 			if (GetObjProperty(targ, "descmodboss"))
 				EraseObjProperty(targ, "descmodboss");
 				SetObjProperty(targ, "Sexo", 0);
@@ -254,7 +255,7 @@ function tamecreature(who)
 			targ.script := ":epicai:tamedBrain";
 			RestartScript(targ);
 
-			Run_Script_To_Completion(":death:npcdeath", { targ });
+			SnapshotPetAttributes(targ);
 
 			AddPet(who, targ.serial);
 			Start_Script(":fezes:scripts/defecador", array{targ});
@@ -628,5 +629,7 @@ function TeachNow(who, tamed, ins)
 		SetObjProperty(tamed, "#bm_awaken", bm);
 		RecalcVitals(tamed);
 	endif
+
+	SnapshotPetAttributes(tamed);
 
 endfunction

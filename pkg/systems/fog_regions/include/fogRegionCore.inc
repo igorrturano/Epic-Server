@@ -14,6 +14,9 @@ const FOG_REGION_STATUS_ACTIVE  := 1;
 const FOG_REGION_STATUS_STOPPED := 0;
 const FOG_REGION_MODE_PERMANENT := "permanent";
 const FOG_REGION_MODE_TIMED     := "timed";
+// Contador global incrementado a cada mutação de região. Watchers comparam contra
+// um valor cacheado e só recarregam o datafile quando ele muda (ver fogRegionWatcher).
+const FOG_REGIONS_VERSION_GLOBAL := "fogRegionsVersion";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -29,6 +32,16 @@ function _OpenRegionsDF()
         df := CreateDataFile(FOG_REGION_DATA_FILE, DF_KEYTYPE_STRING);
     endif
     return df;
+endfunction
+
+// Versão atual do conjunto de regiões (0 se nunca houve mutação).
+function GetFogRegionsVersion()
+    return CInt(GetGlobalProperty(FOG_REGIONS_VERSION_GLOBAL));
+endfunction
+
+// Incrementa a versão — chamado por toda escrita (SaveRegion/DeleteRegion).
+function _BumpFogRegionsVersion()
+    SetGlobalProperty(FOG_REGIONS_VERSION_GLOBAL, GetFogRegionsVersion() + 1);
 endfunction
 
 // Converte elemento do datafile em struct de região.
@@ -57,6 +70,25 @@ function _ElemToStruct(elem, name)
     r.+DesatInt   := CInt(elem.GetProp("DesatInt"));
     r.+PresetName := CStr(elem.GetProp("PresetName"));
     r.+TimerEnd   := CInt(elem.GetProp("TimerEnd"));
+    // FOG-FASE5/F: fallback para regiões criadas antes do suporte a Z-height.
+    var zmin_prop := elem.GetProp("WorldZMin");
+    if (zmin_prop.errortext)
+        r.+WorldZMin := -128;
+    else
+        r.+WorldZMin := CInt(zmin_prop);
+    endif
+    var zmax_prop := elem.GetProp("WorldZMax");
+    if (zmax_prop.errortext)
+        r.+WorldZMax := 127;
+    else
+        r.+WorldZMax := CInt(zmax_prop);
+    endif
+    var zfade_prop := elem.GetProp("FalloffZ"); // FOG-FASE6/G
+    if (zfade_prop.errortext)
+        r.+FalloffZ := 10;
+    else
+        r.+FalloffZ := CInt(zfade_prop);
+    endif
     return r;
 endfunction
 
@@ -106,10 +138,10 @@ function IsRegionLogicallyActive(region)
     return 1;
 endfunction
 
-// Retorna a primeira região logicamente ativa que contém (x, y, realm).
-// Retorna error se nenhuma encontrada.
-function GetRegionAtPosition(x, y, realm)
-    var regions := LoadRegions();
+// Varre um array de regiões JÁ carregado e retorna a primeira logicamente ativa
+// que contém (x, y, realm). IsRegionLogicallyActive reavalia systime a cada chamada,
+// então expiração de regiões timed continua detectada mesmo sobre um cache.
+function MatchRegionAtPosition(regions, x, y, realm)
     foreach r in regions
         if (!IsRegionLogicallyActive(r))
             continue;
@@ -122,6 +154,13 @@ function GetRegionAtPosition(x, y, realm)
         endif
     endforeach
     return error{"errortext" := "nenhuma fog region nesta posição"};
+endfunction
+
+// Retorna a primeira região logicamente ativa que contém (x, y, realm).
+// Retorna error se nenhuma encontrada. (Recarrega tudo — para chamadas pontuais;
+// loops devem cachear via LoadRegions + MatchRegionAtPosition.)
+function GetRegionAtPosition(x, y, realm)
+    return MatchRegionAtPosition(LoadRegions(), x, y, realm);
 endfunction
 
 // Salva (cria ou sobrescreve) uma região no data store.
@@ -159,6 +198,10 @@ function SaveRegion(region_struct)
     elem.SetProp("DesatInt",   region_struct.DesatInt);
     elem.SetProp("PresetName", region_struct.PresetName);
     elem.SetProp("TimerEnd",   region_struct.TimerEnd);
+    elem.SetProp("WorldZMin",  region_struct.WorldZMin); // FOG-FASE5/F
+    elem.SetProp("WorldZMax",  region_struct.WorldZMax); // FOG-FASE5/F
+    elem.SetProp("FalloffZ",   region_struct.FalloffZ);  // FOG-FASE6/G
+    _BumpFogRegionsVersion();
     return 1;
 endfunction
 
@@ -168,7 +211,9 @@ function DeleteRegion(name)
     if (!df)
         return error{"errortext" := "data file não encontrado"};
     endif
-    return df.DeleteElement(name);
+    var result := df.DeleteElement(name);
+    _BumpFogRegionsVersion();
+    return result;
 endfunction
 
 // ── Packet helpers ────────────────────────────────────────────────────────────
@@ -178,11 +223,21 @@ function _Fog_SetInt16BE(byref packet, offset, value)
     packet.SetInt8(offset + 1, value % 256);
 endfunction
 
-// Envia packet 0x0070 com parâmetros customizados para o GM (não persiste).
+// FOG-FASE5/F: escreve Int16 BE com suporte a valores negativos (two's complement).
+function _Fog_SetInt16BESigned(byref packet, offset, value)
+    var uval := value;
+    if (uval < 0)
+        uval := uval + 65536;
+    endif
+    packet.SetInt8(offset,     CInt(uval / 256));
+    packet.SetInt8(offset + 1, uval % 256);
+endfunction
+
+// Envia packet 0x0070 v6 com parâmetros customizados para o GM (não persiste).
 function SendFogTestPacket(who, params)
-    var pkt := CreatePacket(0xD7, 29);
+    var pkt := CreatePacket(0xD7, 35); // FOG-FASE6/G: v6 = 35 bytes
     pkt.SetInt8(0, 0xD7);
-    _Fog_SetInt16BE(pkt, 1,  29);
+    _Fog_SetInt16BE(pkt, 1,  35); // FOG-FASE6/G
     _Fog_SetInt16BE(pkt, 3,  0x0070);
     pkt.SetInt8(5, 1);
     _Fog_SetInt16BE(pkt, 6,  params.density_int);
@@ -198,6 +253,9 @@ function SendFogTestPacket(who, params)
     pkt.SetInt8(25, params.color_g);
     pkt.SetInt8(26, params.color_b);
     _Fog_SetInt16BE(pkt, 27, params.desat_int);
+    _Fog_SetInt16BESigned(pkt, 29, params.world_z_min);  // FOG-FASE5/F
+    _Fog_SetInt16BESigned(pkt, 31, params.world_z_max);  // FOG-FASE5/F
+    _Fog_SetInt16BE(pkt, 33, params.world_z_fade);        // FOG-FASE6/G
     pkt.SendPacket(who);
 endfunction
 
@@ -211,11 +269,11 @@ function SendFogOffToGm(who)
     pkt.SendPacket(who);
 endfunction
 
-// Envia packet 0x0070 com parâmetros de uma região para o player (watcher).
+// Envia packet 0x0070 v6 com parâmetros de uma região para o player (watcher).
 function SendFogPacketForRegion(who, region)
-    var pkt := CreatePacket(0xD7, 29);
+    var pkt := CreatePacket(0xD7, 35); // FOG-FASE6/G: v6 = 35 bytes
     pkt.SetInt8(0, 0xD7);
-    _Fog_SetInt16BE(pkt, 1,  29);
+    _Fog_SetInt16BE(pkt, 1,  35); // FOG-FASE6/G
     _Fog_SetInt16BE(pkt, 3,  0x0070);
     pkt.SetInt8(5, 1);
     _Fog_SetInt16BE(pkt, 6,  region.DensityInt);
@@ -231,6 +289,9 @@ function SendFogPacketForRegion(who, region)
     pkt.SetInt8(25, region.ColorG);
     pkt.SetInt8(26, region.ColorB);
     _Fog_SetInt16BE(pkt, 27, region.DesatInt);
+    _Fog_SetInt16BESigned(pkt, 29, region.WorldZMin); // FOG-FASE5/F
+    _Fog_SetInt16BESigned(pkt, 31, region.WorldZMax); // FOG-FASE5/F
+    _Fog_SetInt16BE(pkt, 33, region.FalloffZ);        // FOG-FASE6/G
     pkt.SendPacket(who);
 endfunction
 

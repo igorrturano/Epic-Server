@@ -22,6 +22,9 @@ include ":containers:storageAreas";
 include ":keys:key";
 include ":death:wakeup";
 include ":duel:duel";
+include ":hotbar:include/custombuff";
+
+const SPELL_PROTECAOMORTE := 519; // priest.cfg Spell 519, buffId usado por SendSpellBuff/RemoveSpellBuff
 
 program death(params)
 
@@ -111,6 +114,11 @@ program death(params)
 		SendSysMessage(ghost, "Voce foi derrotado no duelo.");
 	elseif (protecao) // Protecao Contra Morte
 		SendSysMessageEx(ghost, "Sua alma esta protegida");
+		// Protecao contra morte (altar/magia) e de uso unico: consome ao salvar desta morte
+		if (GetCooldown(ghost, "protecaomorte") > 0)
+			EraseCooldown(ghost, "protecaomorte");
+			RemoveSpellBuff(ghost, SPELL_PROTECAOMORTE);
+		endif
 	elseif (ghost.cmdlevel) // GM
 		// GM nao perde DP
 	else

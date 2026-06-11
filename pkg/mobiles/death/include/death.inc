@@ -192,7 +192,7 @@ function ShamanSoulHarvest(mobile)
 				continue; // Skip players without the ability
 			endif
 
-			var shaman_reap_bonus := Cint(AP_GetSkill(player, THEOLOGY));
+			var shaman_reap_bonus := Cint(AP_GetSkill(player, NATURE));
 			var shaman_souls := Cint(GetObjProperty(player, "shaman_souls"));
 			if (!shaman_souls)
 				shaman_souls := 0;

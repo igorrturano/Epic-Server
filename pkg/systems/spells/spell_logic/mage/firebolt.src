@@ -18,7 +18,7 @@ program cast_firebolt(params)
 	var caster := params[1];
 	var targ := params[2];
 	var spell := params[3];
-	var spell_circle := spell.Circle;
+	var spell_circle := CInt(spell.Circle[1]);
 	var spell_school := spell.School;
 	params := 0; // No longer needed
 
@@ -51,8 +51,7 @@ function LaunchProjectile(caster, targ, spell_circle, spell_school, spellId)
 		endif
 		PlayMovingEffectXYZHued(caster, targ, FX_MAGIC_ARROW, projSpeed, 1643, 0);
 	endif
-	var dmg := RandomDiceRoll("1d4"); /* epicSpellDamageRoll(caster, spell_circle);
-    dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school); */
+	var dmg := RandomDiceRoll("1d4");
 
 	// REFLEX save halves the bolt's damage.
 	if (targ.IsA(POLCLASS_MOBILE))

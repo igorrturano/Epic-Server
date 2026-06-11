@@ -23,7 +23,7 @@ program spell_meteorSwarm(parms)
 	var caster := parms[1];
 	var targ := parms[2];
 	var spell := parms[3];
-	var spell_circle := spell.Circle;
+	var spell_circle := CInt(spell.Circle[1]);
 	var spell_school := spell.School;
 
 	SendSysMessage(caster, "Selecione o alvo.");
@@ -36,6 +36,7 @@ program spell_meteorSwarm(parms)
 	endif
 
 	var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+	dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 	DanificaObjetosProximos(caster, targ.x, targ.y, targ.z, targ.realm, struct{ dano := dmg,
 																				desc := "Chuva de Meteoros.",
 																				tipo := DAMAGE_TYPE::FIRE }, radius, 0x6CCE);
@@ -51,6 +52,7 @@ program spell_meteorSwarm(parms)
 		PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x6CCE, 0, 70, 0, mobile.realm);
 
 		var target_dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+		target_dmg := bonusSpellDamageForSpecialists(caster, target_dmg, spell_school);
 
 		if (CheckResist(mobile, REFLEXES, diff, -bonus))
 			target_dmg := Cint(target_dmg / 2);

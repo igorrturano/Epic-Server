@@ -7,20 +7,22 @@ include ":attributes:attributes";
 include ":containers:checks";
 include ":wrappers:Objects/Model/MobileWrapper";
 
-program canInsert(mobile, container, item, move_type, insert_type, adding_item, existing_stack,
-				  amount_to_add)
+program canInsert(mobile, container, movetype, insert_type, item, existing_stack, amount_to_add)
 
 	if (container.locked || CP_RootContainerLocked(container))
 		SendSysMessage(mobile, "voce nao pode por isto em um container trancado.");
 		return 0;
 	endif
 
-	if (move_type == MOVETYPE_COREMOVE)
-		var who := container.character_owner;
-		if (GetObjProperty(who, "pilotando") || GetObjProperty(who, "metamorfose") != error)
-			SendSysMessageEx(mobile, "Heh, nope.", SSM_INFO);
-			return 0;
-		endif
+	// Pilotando/metamorfose travam qualquer insercao, manual ou via core.
+	// possess.inc depende disso para bloquear MoveItemToContainer.
+	var owner := container.character_owner;
+	if (GetObjProperty(owner, "pilotando") || GetObjProperty(owner, "metamorfose") != error)
+		SendSysMessageEx(mobile, "Heh, nope.", SSM_INFO);
+		return 0;
+	endif
+
+	if (movetype == MOVETYPE_COREMOVE)
 		return 1;
 	endif
 	if (mobile)
@@ -30,16 +32,20 @@ program canInsert(mobile, container, item, move_type, insert_type, adding_item, 
 				aux := aux.container;
 			endwhile
 			var mobWrapper := MobileWrapper(mobile);
-			if (aux == mobile && mobWrapper.HasFreeHand())
+			if (aux == mobile)
+				if (mobWrapper.IsMounted() && !IsMountSwappableEquip(item))
+					SendSysMessage(mobile, "Voce nao pode fazer isto montado.");
+					return 0;
+				endif
+				if (mobile.frozen || mobile.paralyzed)
+					SendSysMessage(mobile, "Voce esta paralizado.");
+					return 0;
+				endif
 				return 1;
 			endif
 
-			if (mobWrapper.IsMounted())
+			if (mobWrapper.IsMounted() && !IsMountSwappableEquip(item))
 				SendSysMessage(mobile, "Voce nao pode fazer isto montado.");
-				return 0;
-			endif
-
-			if (!mobWrapper.HasFreeHand())
 				return 0;
 			endif
 

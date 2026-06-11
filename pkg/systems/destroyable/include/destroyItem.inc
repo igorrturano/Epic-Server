@@ -707,7 +707,7 @@ function DanificaItem(quemDanificou, item, fonteDano, gfx := 0, gfxHue := 0)
 
 	if (gfx != 0)
 		if (gfxHue)
-		// PlayObjectCenteredEffectHuefx(item, gfx, 5, 6,gfxHue); // Conflito com includes por funcões duplicadas =(
+		// PlayObjectCenteredEffectEx(item, gfx, 5, 6,gfxHue); // Conflito com includes por funcões duplicadas =(
 		else
 			PlayObjectCenteredEffect(item, gfx, 5, 6);
 		endif

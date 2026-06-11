@@ -34,7 +34,6 @@ program FearAura(params)
 			continue;
 		endif
 
-		TS_StartTimer(mobile, "blinded", 10, 1, me);
 		TS_StartTimer(mobile, "exposed", 10, 1, me);
 		SendSysMessageEx(mobile, "Um terror sobrenatural invade sua mente!", SSM_FAIL);
 	endforeach

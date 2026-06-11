@@ -126,28 +126,26 @@ function _HasSchoolSpecialist(who, school)
 	if (school == VELKYN && mw.HasAbility(ABILITY_ID::VALDRUK))
 		return 1;
 	endif
+	if (school == KAIJIN && mw.HasAbility(ABILITY_ID::CETRO_DA_MORTE))
+		return 1;
+	endif
+	if (school == ARADALORE && mw.HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
+		return 1;
+	endif
 	return 0;
 endfunction
 
 function epicSpellDamageRoll(who, spell_circle, school := 0)
-	var effective_circle := spell_circle;
-	if (school != 0 && _HasSchoolSpecialist(who, school))
-		effective_circle := spell_circle + 1;
-		if (effective_circle > 5)
-			effective_circle := 5;  // C5 specialists clamp at 10d12 (no C6 dice defined).
-		endif
-	endif
-
 	var dice := cstr("1d4");
-	if (effective_circle == 1)
+	if (spell_circle == 1)
 		dice := cstr("2d4");
-	elseif (effective_circle == 2)
+	elseif (spell_circle == 2)
 		dice := cstr("4d6");
-	elseif (effective_circle == 3)
+	elseif (spell_circle == 3)
 		dice := cstr("6d8");
-	elseif (effective_circle == 4)
+	elseif (spell_circle == 4)
 		dice := cstr("8d10");
-	elseif (effective_circle == 5)
+	elseif (spell_circle == 5)
 		dice := cstr("10d12");
 	endif
 
@@ -156,6 +154,13 @@ function epicSpellDamageRoll(who, spell_circle, school := 0)
 	var bonus := epicWisdomPathBonus(who);
 	dmg := Cint(dmg + bonus);
 
+	return dmg;
+endfunction
+
+function bonusSpellDamageForSpecialists(who, dmg, school)
+	if (school != 0 && _HasSchoolSpecialist(who, school))
+		return Cint(dmg * 1.2);
+	endif
 	return dmg;
 endfunction
 

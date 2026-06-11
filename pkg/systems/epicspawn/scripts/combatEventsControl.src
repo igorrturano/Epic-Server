@@ -15,6 +15,20 @@ program combatEventsControl(params)
 		return 0;
 	endif
 
+	// Single-instance guard: a boss re-saved/respawned can otherwise accumulate
+	// multiple copies of this loop, each firing every event independently (the
+	// "damage applied N times" symptom). If a live instance is already running
+	// on this npc, bail out. (Idiom from death.src GetPid/GetProcess.)
+	var my_pid := GetPid();
+	var existing_pid := GetObjProperty(npc, "combatEventsPid");
+	if (existing_pid && CInt(existing_pid) != my_pid)
+		var proc := GetProcess(CInt(existing_pid));
+		if (proc && !proc.errortext)
+			return 0; // a live instance already owns this boss
+		endif
+	endif
+	SetObjProperty(npc, "combatEventsPid", my_pid);
+
 	// Initialize tracking for combat events
 	SetupCombatEventTracking(npc);
 
@@ -137,15 +151,6 @@ function ProcessCombatEvents(npc, combat_start, byref fired_this_combat)
 			continue;
 		endif
 
-		// Check if the NPC is bloodied (below 50% health) if required
-		if (event.onlybloodied)
-			var max_hits := AP_GetVitalMaximumValue(npc, HITS);
-			var curr_hits := AP_GetVital(npc, HITS);
-			if (curr_hits > (max_hits * 0.5))
-				continue; // Not bloodied, skip
-			endif
-		endif
-
 		// Check if opponent is within required distance
 		if (event.dist > 0)
 			var opponent := npc.opponent;
@@ -155,7 +160,6 @@ function ProcessCombatEvents(npc, combat_start, byref fired_this_combat)
 		endif
 
 		// All conditions met, execute the event
-
 		// Execute the event using the function from epicCombatEvents.inc
 		if (ExecuteCombatEvent(npc, event, event_actions))
 			// Update the last cast time

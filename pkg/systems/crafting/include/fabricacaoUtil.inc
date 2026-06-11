@@ -348,10 +348,12 @@ function AplicaAtributosItemFabricado(quem, item, propFabricadoMontado)
 		if(quantidadeDoses)
 			SetObjProperty(item, "doses", quantidadeDoses);
 		endif
-		SetObjProperty(item, "tier", infoPote.tier);
-		SetObjProperty(item, "crafterskill", infoPote.crafterskill);
-		SetObjProperty(item, "science", infoPote.science);
-		SetObjProperty(item, "bonus", infoPote.bonus);
+		if(infoPote.science != "Tinta")
+			SetObjProperty(item, "tier", infoPote.tier);
+			SetObjProperty(item, "crafterskill", infoPote.crafterskill);
+			SetObjProperty(item, "science", infoPote.science);
+			SetObjProperty(item, "bonus", infoPote.bonus);
+		endif
 	endif
 
 	AplicaFechadura(quem, item);
@@ -438,6 +440,15 @@ function PegaValorMaterialPrincipalFabricacao(item, caracteristica)
 
 	var efeitos := InterpretaMaterialEfeitos(caracteristica, chaveMaterial);
 	return Cint(efeitos.valorPrincipal) + Cint(principal.tier.valor);
+endfunction
+
+function DevolveContainerVazio(quem, objtypeConsumido, quantidadeConsumida)
+	if(!quem || quantidadeConsumida <= 0) return; endif
+	var descItem := itemsConfig[objtypeConsumido];
+	if(!descItem) return; endif
+	var emptyObjType := cint(GetConfigInt(descItem, "emptyObjType"));
+	if(emptyObjType <= 0) return; endif
+	CreateItemInBackpack(quem, emptyObjType, quantidadeConsumida);
 endfunction
 
 function AplicaFechadura(quem, item)

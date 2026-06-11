@@ -18,7 +18,7 @@ program chainLightning(params)
 	var caster := params[1];
 	var targ := params[2];
 	var spellinfo := params[3];
-	var spell_circle := spellinfo.Circle;
+	var spell_circle := CInt(spellinfo.Circle[1]);
 	var spell_school := spellinfo.School;
 	SendSysMessage(caster, "Selecione o alvo.");
 
@@ -42,6 +42,7 @@ program chainLightning(params)
 		casterThenNextMobile := mobile;
 		PlaySoundEffect(mobile, SFX_SPELL_LIGHTNING);
 		var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 
 		SC_DealDamage(caster, mobile, CInt(spellinfo.id), cint(dmg), DAMAGE_TYPE::ENERGY);
 		sleepms(600);

@@ -4,6 +4,7 @@ include ":attributes:attributes";
 include "include/epicConstants";
 include "include/epicUtils";
 include ":tn:equipment";
+include ":tn:tngumps";
 include ":abilities:include/models/Ability";
 include ":census:include/CensusController";
 include ":wrappers:Objects/Model/MobileWrapper";
@@ -511,6 +512,37 @@ function comprarHabilidade(who, item, nv:=-1)
 			endif
 		elseif(escolhida_id == ABILITY_ID::AURA_DE_FE)
 			ChooseFlag(who);
+		elseif (escolhida_id == ABILITY_ID::POLIGLOTA)
+			var all_languages := array{ "Imperialis", "Aglâb", "Ahruwën", "Haiei", "Phalk",
+										"Grumnak", "Björ", "Idrith'har", "Comum", "Sylovir" };
+			var known := GetObjProperty(who, "linguas_conhecidas");
+			if (known == error || !known)
+				known := array{};
+			endif
+			var available := array{};
+			foreach lang in all_languages
+				if (!(lang in known))
+					available.append(lang);
+				endif
+			endforeach
+			if (!available.size())
+				SendSysMessageEx(who, "Voce ja conhece todos os idiomas disponiveis.", SSM_FAIL);
+				return 0;
+			endif
+			var chosen := RadioGump(who, 250, 200, "Qual idioma deseja aprender?", available);
+			if (!chosen)
+				SendSysMessageEx(who, "Voce cancelou a compra da habilidade.", SSM_FAIL);
+				return 0;
+			endif
+			known.append(chosen);
+			SetObjProperty(who, "linguas_conhecidas", known);
+			var poliglota_langs := GetObjProperty(who, "#poliglota_languages");
+			if (poliglota_langs == error || !poliglota_langs)
+				poliglota_langs := array{};
+			endif
+			poliglota_langs.append(chosen);
+			SetObjProperty(who, "#poliglota_languages", poliglota_langs);
+			SendSysMessageEx(who, "Voce aprendeu o idioma: " + chosen, SSM_INFO);
 		endif
 		myhabs[nivel] := escolhida_id;
 		habs[nivel] := 2;
@@ -792,6 +824,16 @@ function ShowEmTreinamentoPage(byref gump, who)
     GFHTMLArea(gump, 240, 495, 100, 20, "<BASEFONT SIZE=5>Atualizar</BASEFONT>", 0, 0);
 endfunction
 
+function FormatCap(value)
+    var scaled := CInt(CDbl(value) * 10);
+    var whole := CInt(scaled / 10);
+    var tenths := scaled - (whole * 10);
+    if (tenths < 0)
+        tenths := -tenths;
+    endif
+    return whole + "." + tenths;
+endfunction
+
 function ShowCapInfo(byref gump, who)
     var chardata := GetObjProperty(who, "chardata");
     var cappri, capsec, capter, capprimax, capsecmax, captermax;
@@ -839,9 +881,9 @@ function ShowCapInfo(byref gump, who)
 
     var y_pos := GUMP_HEIGHT - 60;
     GFTextMid(gump, 55, y_pos, 300, 53, "Cap/MaxCap:");
-    GFTextLine(gump, 50, y_pos + 20, 300, "Pri.: " + cappri + "/" + capprimax);
-    GFTextLine(gump, 160, y_pos + 20, 300, "Sec.: " + capsec + "/" + capsecmax);
-    GFTextLine(gump, 270, y_pos + 20, 300, "Ter.: " + capter + "/" + captermax);
+    GFTextLine(gump, 50, y_pos + 20, 300, "Pri.: " + FormatCap(cappri) + "/" + FormatCap(capprimax));
+    GFTextLine(gump, 160, y_pos + 20, 300, "Sec.: " + FormatCap(capsec) + "/" + FormatCap(capsecmax));
+    // GFTextLine(gump, 270, y_pos + 20, 300, "Ter.: " + FormatCap(capter) + "/" + FormatCap(captermax));
 endfunction
 
 function Habilidades(who, nivel)

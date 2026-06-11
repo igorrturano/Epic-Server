@@ -16,7 +16,7 @@ program cast_lightningbolt(params)
 	var caster := params[1];
 	var targ := params[2];
 	var spellinfo := params[3];
-	var spell_circle := spellinfo.Circle;
+	var spell_circle := CInt(spellinfo.Circle[1]);
 	var spell_school := spellinfo.School;
 
 	params := 0;
@@ -30,9 +30,9 @@ program cast_lightningbolt(params)
 	PlaySoundEffect(caster, SFX_SPELL_ENERGY_BOLT);
 	// PlayMovingEffectXYZHued(caster, targ, 0xCDE5, 10, 1643, 0);
 	PlayObjectCenteredEffect(targ, 0xCDE5, 15, 10);
-	// C5 single-target ultimate: circle dice + flat Arcana/5. Evocator bump
-	// is absorbed into the dice tier by epicSpellDamageRoll.
+	// C5 single-target ultimate: circle dice + flat Arcana/5.
 	var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+	dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 	dmg := dmg + Cint(AP_GetSkill(caster, ARCANA) / 5);
 
 	// REFLEX save halves the bolt's damage (normalized to canonical

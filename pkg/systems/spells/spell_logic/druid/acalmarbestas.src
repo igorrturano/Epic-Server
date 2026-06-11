@@ -10,6 +10,7 @@ include ":tn:npcutil";
 include ":tn:cooldown";
 include "include/sysEvent";
 include "include/eventID";
+include ":taming:taming";
 
 program textcmd_acalmar(params)
 	var who := params[1];
@@ -46,6 +47,10 @@ program textcmd_acalmar(params)
 	var isAnimal := creature.isAnimalBrain();
 	if (!isAnimal)
 		SendSysMessage(who, "Esse não pode ser um alvo válido.");
+		return 0;
+	endif
+	if (IsTamedPet(creature))
+		SendSysMessageEx(who, creature.name + " não pode ser acalmado.", SSM_FAIL);
 		return 0;
 	endif
 

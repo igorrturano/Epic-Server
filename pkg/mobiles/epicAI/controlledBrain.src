@@ -12,6 +12,7 @@ include ":mounts:mounts";
 include ":taming:taming";
 include ":tn:cooldown";
 include "include/eventID";
+include ":containers:mochilaPackhorse";
 
 // ============================================================================
 // controlledBrain.src - epicAI controlled/summoned-creature brain (Phase 5)
@@ -286,6 +287,8 @@ function TakeItem(ev)
 			DestroyItem(ev.item);
 			PrintTextAbove(ev.source, "*prende uma mochila na llama*");
 		endif
+	elseif (IsMochilaPackhorse(ev.item))
+		InstallMochilaOnPackhorse(me, ev.item, ev.source);
 	else
 		SendSysMessage(ev.source, "Nao pode dar esse item!");
 	endif
@@ -510,16 +513,7 @@ function ProcessDoubleClick(ev)
 						return;
 					endif
 					PrintTextAbove(ev.source, "*remove a mochila de " + me.name + "*");
-					me.graphic := GetObjProperty(me, "beforepack");
-					if (!GetObjProperty(me, "beforepack"))
-						if (me.graphic == 292)
-							me.graphic := 220;
-						elseif (me.graphic == 291)
-							me.graphic := 200;
-						endif
-					endif
-					CreateItemInBackpack(ev.source, "backpack");
-					EraseObjProperty(me, "beforepack");
+					HandlePackhorseRetira(me, ev.source);
 				endif
 			elseif (IsMountable(me.graphic) && MoveObjectToLocation(ev.source, me.x, me.y, me.z, ev.source.realm))
 				ev.source.hidden := 0;
@@ -590,10 +584,7 @@ function Setup()
 		SetObjProperty(me, "happiness", happiness);
 	endif
 
-	if (!me.backpack)
-		var new_pack := CreateItemAtLocation(me.x, me.y, me.z, "backpack", 1);
-		EquipItem(me, new_pack);
-	endif
+	EnsureNpcBackpack(me);
 
 	me.facing := me.facing + 1;
 	TurnToward(me.master);

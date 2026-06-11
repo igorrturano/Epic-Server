@@ -2,7 +2,7 @@
 use uo;
 
 // Comando GM: cria uma bolsa com 1 unidade de cada cabeca raw (nao curada)
-// Raws sao o que dropa do cadaver — precisam ser curtidas no curtidor para virar intactas
+// Raws sao o que dropa do cadaver — precisam ser curtidas no curtidor para virar tratadas
 program criar_cabecas_raw(who)
 
 	var raws := array{

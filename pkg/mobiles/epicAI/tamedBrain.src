@@ -14,6 +14,7 @@ include ":tn:cooldown";
 include "include/produzTeia";
 include ":tn:include/cooldown";
 include "include/eventID";
+include ":containers:mochilaPackhorse";
 
 // ============================================================================
 // tamedBrain.src - epicAI tamed-pet brain (Phase 4)
@@ -394,6 +395,12 @@ function TakeItem(ev)
 		return;
 	endif
 
+	// Mochila de Packhorse craftada: substituir o backpack default
+	if (IsMochilaPackhorse(ev.item))
+		InstallMochilaOnPackhorse(me, ev.item, ev.source);
+		return;
+	endif
+
 	// relacionado as comidas do pet
 	var mob := MobileWrapper(me);
 	var npctemplate := mob.GetTemplateName();
@@ -729,14 +736,25 @@ function ProcessDoubleClick(ev)
 	if (targ)
 		if (targ.mobile == me)
 			if (me.graphic in pack_animals)
-				if ((EnumerateItemsInContainer(me.backpack)).size() > 0)
-					SendSysMessage(ev.source, "Voce precisa esvaziar a mochila antes de remove-la.");
-					return;
+				var packGump := GFCreateGump(220, 70);
+				GFResizePic(packGump, 0, 0, 0x254E, 100, 100);
+				GFTextLine(packGump, 30, 15, 2100, "Abre");
+				GFTextLine(packGump, 30, 35, 2100, "Retira ");
+				GFAddButton(packGump, 15, 17, 2117, 2118, 1, 10);
+				GFAddButton(packGump, 15, 37, 2117, 2118, 1, 20);
+				var packInput := GFSendGump(owner, packGump);
+				packInput := packInput[0];
+
+				if (packInput == 10)
+					OpenPack(ev);
+				elseif (packInput == 20)
+					if ((EnumerateItemsInContainer(me.backpack)).size() > 0)
+						SendSysMessage(ev.source, "Voce precisa esvaziar a mochila antes de remove-la.");
+						return;
+					endif
+					PrintTextAbove(ev.source, "*remove a mochila de " + me.name + "*");
+					HandlePackhorseRetira(me, ev.source);
 				endif
-				PrintTextAbove(ev.source, "*remove a mochila de " + me.name + "*");
-				me.graphic := GetObjProperty(me, "beforepack");
-				CreateItemInBackpack(ev.source, "backpack");
-				EraseObjProperty(me, "beforepack");
 			endif
 		elseif (targ.mobile)
 			var gump := GFCreateGump(220, 70);
@@ -824,10 +842,14 @@ function Setup()
 		SetObjProperty(me, "happiness", happiness);
 	endif
 
-	if (!me.backpack)
-		var new_pack := CreateItemAtLocation(me.x, me.y, me.z, "backpack", 1);
-		EquipItem(me, new_pack);
+	// Back-compat: pets tamed before the petSnapshot rollout have no snapshot.
+	// Capture current stats/skills so the next death/rez locks them in instead
+	// of re-rolling from the template.
+	if (TypeOf(GetObjProperty(me, "petSnapshot")) != "Struct")
+		SnapshotPetAttributes(me);
 	endif
+
+	EnsureNpcBackpack(me);
 
 	me.facing := me.facing + 1;
 	TurnToward(me.master);

@@ -720,6 +720,38 @@ function ReverseAbilityPurchaseEffects(who, hab_id)
 	elseif (id == ABILITY_ID::TIRO_EM_MOVIMENTO)
 		who.disable("firewhilemoving");
 		RevokePrivilege(who, "firewhilemoving");
+	elseif (id == ABILITY_ID::POLIGLOTA)
+		// Pop the most recently learned Poliglota language and strip it from
+		// linguas_conhecidas. Starting/cultural languages never enter
+		// #poliglota_languages, so they are safe from removal.
+		var poliglota_langs := GetObjProperty(who, "#poliglota_languages");
+		if (poliglota_langs == error || !poliglota_langs || !poliglota_langs.size())
+			return;
+		endif
+		var removed := poliglota_langs[poliglota_langs.size()];
+		poliglota_langs.erase(poliglota_langs.size());
+		if (poliglota_langs.size())
+			SetObjProperty(who, "#poliglota_languages", poliglota_langs);
+		else
+			EraseObjProperty(who, "#poliglota_languages");
+		endif
+		var known := GetObjProperty(who, "linguas_conhecidas");
+		if (known != error && known)
+			var new_known := array{};
+			var skipped := 0;
+			foreach lang in known
+				if (!skipped && lang == removed)
+					skipped := 1;
+					continue;
+				endif
+				new_known.append(lang);
+			endforeach
+			SetObjProperty(who, "linguas_conhecidas", new_known);
+			var current := GetObjProperty(who, "lingua_escolhida");
+			if (current == removed)
+				SetObjProperty(who, "lingua_escolhida", "Comum");
+			endif
+		endif
 	endif
 endfunction
 

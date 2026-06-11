@@ -67,7 +67,7 @@ program epicCreationGump(who)
 	skillSelection(who, culture_pic);
 	attributeSelection(who, culture_pic);
 	religionSelection(who);
-	gameModeSelection(who);
+	// gameModeSelection(who);  // hotfix: skip selection for new chars; legacy True Mode chars keep working via chardata.game_mode field
 	applyClassStarter(who);
 	itemInheritance(who);
 	languageSelection(who, culture_pic);

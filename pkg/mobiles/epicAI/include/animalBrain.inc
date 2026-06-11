@@ -49,7 +49,7 @@ function AnimalBrain()
         DecayThreat();
         if (ShouldReevaluateTarget())
             var threat_top := GetTopThreat();
-            if (threat_top && threat_top != me.opponent)
+            if (threat_top && threat_top != me.opponent && !SpiderSparesDrow(me, threat_top))
                 SetOpponent(threat_top);
             endif
         endif
@@ -74,6 +74,9 @@ function AnimalBrain()
             case (ev.type)
                 SYSEVENT_ENGAGED:
                     last_activity_time := polcore().systime;
+                    if (GetCooldown(me, "peacemade") > 0)
+                        SetCooldown(me, "peacemade", 0);
+                    endif
                     AddThreat(ev.source, 0);
                     if (should_flee)
                         SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
@@ -83,6 +86,9 @@ function AnimalBrain()
                     endif
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
+                    if (GetCooldown(me, "peacemade") > 0)
+                        SetCooldown(me, "peacemade", 0);
+                    endif
                     AddThreat(ev.source, 0);
                     UpdateThreatList(me, ev);
                     if (SM_GetState() == "AMBUSH")
@@ -191,6 +197,35 @@ function HandleAnimalEnteredArea(source)
     return 1;
 endfunction
 
+// Spiders refuse to engage drows. Higher-tier spiders apply stricter filters:
+// only drows with Har'oloth culture or Eluith'orth religion still earn a pass.
+// Tier 5 always challenges drows to test if they are worthy opponents.
+function SpiderSparesDrow(spider, targ)
+    if (!targ)
+        return 0;
+    endif
+    if (NPC_GetCachedData(spider).npc_race != "aranha")
+        return 0;
+    endif
+    if (targ.getRace() != DROW)
+        return 0;
+    endif
+    var tier := CInt(spider.getTier());
+    if (tier <= 2)
+        return 1;
+    endif
+    if (tier >= 5)
+        return 0;
+    endif
+    if (targ.getCulture() == HAROLOTH)
+        return 1;
+    endif
+    if (targ.getReligion() == ELUITHORTH)
+        return 1;
+    endif
+    return 0;
+endfunction
+
 function HandleAnimalCombatEvent(opponent)
     if (!opponent || opponent.dead || !CanFight(me, opponent))
         return 0;
@@ -205,16 +240,8 @@ function HandleAnimalCombatEvent(opponent)
     // Check for health-based teleport
     CheckHealthTeleport(me);
 
-    if (NPC_GetCachedData(me).npc_race == "aranha" && opponent.getRace() == DROW)
-        var tier := CInt(me.getTier());
-        if (tier <= 2)
-            return 0;
-        elseif (tier <= 3 && opponent.getCulture() == HAROLOTH)
-            return 0;
-        elseif (tier <= 4 && opponent.getReligion() == ELUITHORTH)
-            return 0;
-        endif
-        // Tier 5 sempre desafia drows para testar se são oponentes valiosos
+    if (SpiderSparesDrow(me, opponent))
+        return 0;
     endif
 
     // Check if animal is taunted - if so, only fight the taunter

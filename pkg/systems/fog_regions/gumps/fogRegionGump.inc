@@ -97,6 +97,17 @@ const FR_BTN_ED_HELP_SPEED   := 77;
 const FR_BTN_ED_HELP_DARK    := 78;
 const FR_BTN_ED_HELP_DESAT   := 79;
 const FR_BTN_ED_HELP_COLOR   := 80;
+// FOG-FASE5/F: controles de altura Z de mundo
+const FR_BTN_ED_ZMIN_DEC  := 81;
+const FR_BTN_ED_ZMIN_INC  := 82;
+const FR_BTN_ED_ZMAX_DEC  := 83;
+const FR_BTN_ED_ZMAX_INC  := 84;
+const FR_BTN_ED_HELP_ZMIN := 85;
+const FR_BTN_ED_HELP_ZMAX := 86;
+// FOG-FASE6/G: controle de suavidade da borda Z
+const FR_BTN_ED_ZFADE_DEC  := 87;
+const FR_BTN_ED_ZFADE_INC  := 88;
+const FR_BTN_ED_HELP_ZFADE := 89;
 
 // FOG-FASE5: Steps de incremento/decremento por variável
 const FR_STEP_DENSITY := 100;
@@ -110,6 +121,7 @@ const FR_STEP_SPEED   := 100;
 const FR_STEP_DARK    := 50;
 const FR_STEP_DESAT   := 50;
 const FR_STEP_COLOR   := 13;
+const FR_STEP_Z       := 5; // FOG-FASE5/F
 
 // Limites min/max por variável
 const FR_MIN_DENSITY := 100;
@@ -136,6 +148,11 @@ const FR_MIN_COLOR   := 0;
 const FR_MAX_COLOR   := 255;
 const FR_MIN_DURACAO := 1;
 const FR_MAX_DURACAO := 240;
+const FR_MIN_Z       := -128; // FOG-FASE5/F
+const FR_MAX_Z       := 127;  // FOG-FASE5/F
+const FR_STEP_ZFADE  := 5;    // FOG-FASE6/G
+const FR_MIN_ZFADE   := 1;    // FOG-FASE6/G
+const FR_MAX_ZFADE   := 60;   // FOG-FASE6/G
 
 // Layout Tooltips
 const FR_TOOLTIP_W := 320;
@@ -208,6 +225,9 @@ function GetEditorState(who)
         state.+color_r            := 128;
         state.+color_g            := 133;
         state.+color_b            := 148;
+        state.+world_z_min        := -128; // FOG-FASE5/F
+        state.+world_z_max        := 127;  // FOG-FASE5/F
+        state.+world_z_fade       := 10;   // FOG-FASE6/G
         state.+editing            := "";
     endif
     if (state.editing.errortext)
@@ -339,6 +359,9 @@ function _ApplyEditorStep(byref state, btn)
     elseif  (btn == FR_BTN_ED_COLOR_G_DEC || btn == FR_BTN_ED_COLOR_G_INC) state.color_g       := _Step(state.color_g,       FR_STEP_COLOR,   FR_MIN_COLOR,   FR_MAX_COLOR,   btn == FR_BTN_ED_COLOR_G_INC);
     elseif  (btn == FR_BTN_ED_COLOR_B_DEC || btn == FR_BTN_ED_COLOR_B_INC) state.color_b       := _Step(state.color_b,       FR_STEP_COLOR,   FR_MIN_COLOR,   FR_MAX_COLOR,   btn == FR_BTN_ED_COLOR_B_INC);
     elseif  (btn == FR_BTN_ED_DURACAO_DEC || btn == FR_BTN_ED_DURACAO_INC) state.duracao_valor := _Step(state.duracao_valor, 1,               FR_MIN_DURACAO, FR_MAX_DURACAO, btn == FR_BTN_ED_DURACAO_INC);
+    elseif  (btn == FR_BTN_ED_ZMIN_DEC   || btn == FR_BTN_ED_ZMIN_INC)   state.world_z_min   := _Step(state.world_z_min,   FR_STEP_Z,       FR_MIN_Z,       FR_MAX_Z,       btn == FR_BTN_ED_ZMIN_INC);  // FOG-FASE5/F
+    elseif  (btn == FR_BTN_ED_ZMAX_DEC   || btn == FR_BTN_ED_ZMAX_INC)   state.world_z_max   := _Step(state.world_z_max,   FR_STEP_Z,       FR_MIN_Z,       FR_MAX_Z,       btn == FR_BTN_ED_ZMAX_INC);  // FOG-FASE5/F
+    elseif  (btn == FR_BTN_ED_ZFADE_DEC  || btn == FR_BTN_ED_ZFADE_INC)  state.world_z_fade  := _Step(state.world_z_fade,  FR_STEP_ZFADE,   FR_MIN_ZFADE,   FR_MAX_ZFADE,   btn == FR_BTN_ED_ZFADE_INC); // FOG-FASE6/G
     endif
 endfunction
 
@@ -373,6 +396,9 @@ function _StateToRegionStruct(state, preset_name)
     region.+ColorG     := state.color_g;
     region.+ColorB     := state.color_b;
     region.+DesatInt   := state.desat_int;
+    region.+WorldZMin  := state.world_z_min;  // FOG-FASE5/F
+    region.+WorldZMax  := state.world_z_max;  // FOG-FASE5/F
+    region.+FalloffZ   := state.world_z_fade; // FOG-FASE6/G
     region.+PresetName := preset_name;
     if (state.duracao_mode == FOG_REGION_MODE_TIMED)
         region.+TimerEnd := polcore().systime + (state.duracao_valor * 60);
@@ -919,6 +945,26 @@ function _GetTooltipData(var_name)
                             "(0.65, 0.58, 0.45) = sepia / arida", "(0.48, 0.55, 0.45) = verde musgo",
                             "(1.0, 0.3, 0.1) = avermelhada / vulcanica" };
         d.analogy := "A cor da luz que a névoa emite.";
+    elseif (var_name == "z_min") // FOG-FASE5/F
+        d.title   := "z min — Altitude mínima de névoa"; // FOG-FASE5/F
+        d.desc    := "Altitude (Z) do mundo abaixo da qual a névoa não aparece."; // FOG-FASE5/F
+        d.values  := array{ "-128 = sem limite inferior (padrao)", "0 = sem nevoa abaixo do nivel do mar",
+                            "30 = nevoa apenas em elevacoes medias ou altas" }; // FOG-FASE5/F
+        d.analogy := "O piso acima do qual a névoa flutua."; // FOG-FASE5/F
+        d.warning := "Deve ser menor ou igual a z max."; // FOG-FASE5/F
+    elseif (var_name == "z_max") // FOG-FASE5/F
+        d.title   := "z max — Altitude máxima de névoa"; // FOG-FASE5/F
+        d.desc    := "Altitude (Z) do mundo acima da qual a névoa não aparece."; // FOG-FASE5/F
+        d.values  := array{ "127 = sem limite superior (padrao)", "50 = nevoa so em areas baixas",
+                            "0 = nevoa apenas abaixo do nivel do mar" }; // FOG-FASE5/F
+        d.analogy := "O teto abaixo do qual a névoa fica confinada."; // FOG-FASE5/F
+        d.warning := "Deve ser maior ou igual a z min."; // FOG-FASE5/F
+    elseif (var_name == "z_fade") // FOG-FASE6/G
+        d.title   := "z suave — Suavidade da borda de altura";
+        d.desc    := "Largura da transição (em unidades de Z) nas bordas z min e z max. Valores baixos = corte seco (teto de névoa definido); valores altos = degradê suave e difuso.";
+        d.values  := array{ "1 = corte quase seco (linha dura)", "10 = transição padrão",
+                            "30 = bem difuso", "60 = degradê muito longo" };
+        d.analogy := "Quão 'borrada' é a faixa onde a névoa aparece/some por altura.";
     endif
     return d;
 endfunction
@@ -935,6 +981,9 @@ function _ButtonIdToVarName(btn)
     if (btn == FR_BTN_ED_HELP_DARK)    return "dark"; endif
     if (btn == FR_BTN_ED_HELP_DESAT)   return "desat"; endif
     if (btn == FR_BTN_ED_HELP_COLOR)   return "color"; endif
+    if (btn == FR_BTN_ED_HELP_ZMIN)    return "z_min";  endif // FOG-FASE5/F
+    if (btn == FR_BTN_ED_HELP_ZMAX)    return "z_max";  endif // FOG-FASE5/F
+    if (btn == FR_BTN_ED_HELP_ZFADE)   return "z_fade"; endif // FOG-FASE6/G
     return "";
 endfunction
 
@@ -1069,6 +1118,27 @@ function ShowFogRegionManualEditor(who)
         GFAddButton(gump, FR_ED_HELP_X,  y, FR_BTN_SMALL_UP, FR_BTN_SMALL_DN, 1, FR_BTN_ED_HELP_DESAT);
         y += FR_ED_ROW_H;
 
+        GFTextLine(gump, FR_ED_LABEL_X,  y + 3, FR_COLOR_BODY, "z min"); // FOG-FASE5/F
+        GFAddButton(gump, FR_ED_DEC_X,   y, FR_BTN_SMALL_UP, FR_BTN_SMALL_DN, 1, FR_BTN_ED_ZMIN_DEC); // FOG-FASE5/F
+        GFTextLine(gump, FR_ED_VAL_X,    y + 3, FR_COLOR_BODY, CStr(state.world_z_min)); // FOG-FASE5/F
+        GFAddButton(gump, FR_ED_INC_X,   y, FR_BTN_SMALL_UP, FR_BTN_SMALL_DN, 1, FR_BTN_ED_ZMIN_INC); // FOG-FASE5/F
+        GFAddButton(gump, FR_ED_HELP_X,  y, FR_BTN_SMALL_UP, FR_BTN_SMALL_DN, 1, FR_BTN_ED_HELP_ZMIN); // FOG-FASE5/F
+        y += FR_ED_ROW_H; // FOG-FASE5/F
+
+        GFTextLine(gump, FR_ED_LABEL_X,  y + 3, FR_COLOR_BODY, "z max"); // FOG-FASE5/F
+        GFAddButton(gump, FR_ED_DEC_X,   y, FR_BTN_SMALL_UP, FR_BTN_SMALL_DN, 1, FR_BTN_ED_ZMAX_DEC); // FOG-FASE5/F
+        GFTextLine(gump, FR_ED_VAL_X,    y + 3, FR_COLOR_BODY, CStr(state.world_z_max)); // FOG-FASE5/F
+        GFAddButton(gump, FR_ED_INC_X,   y, FR_BTN_SMALL_UP, FR_BTN_SMALL_DN, 1, FR_BTN_ED_ZMAX_INC); // FOG-FASE5/F
+        GFAddButton(gump, FR_ED_HELP_X,  y, FR_BTN_SMALL_UP, FR_BTN_SMALL_DN, 1, FR_BTN_ED_HELP_ZMAX); // FOG-FASE5/F
+        y += FR_ED_ROW_H; // FOG-FASE5/F
+
+        GFTextLine(gump, FR_ED_LABEL_X,  y + 3, FR_COLOR_BODY, "z suave"); // FOG-FASE6/G
+        GFAddButton(gump, FR_ED_DEC_X,   y, FR_BTN_SMALL_UP, FR_BTN_SMALL_DN, 1, FR_BTN_ED_ZFADE_DEC); // FOG-FASE6/G
+        GFTextLine(gump, FR_ED_VAL_X,    y + 3, FR_COLOR_BODY, CStr(state.world_z_fade)); // FOG-FASE6/G
+        GFAddButton(gump, FR_ED_INC_X,   y, FR_BTN_SMALL_UP, FR_BTN_SMALL_DN, 1, FR_BTN_ED_ZFADE_INC); // FOG-FASE6/G
+        GFAddButton(gump, FR_ED_HELP_X,  y, FR_BTN_SMALL_UP, FR_BTN_SMALL_DN, 1, FR_BTN_ED_HELP_ZFADE); // FOG-FASE6/G
+        y += FR_ED_ROW_H; // FOG-FASE6/G
+
         GFResizePic(gump, FR_ED_LABEL_X, y, FR_RESIZEPIC_GFX, FR_BTN_W, 3);
         y += 12;
 
@@ -1158,17 +1228,34 @@ function ShowFogRegionManualEditor(who)
             _ApplyEditorStep(state, btn);
             state.erro := "";
             SetEditorState(who, state);
+        elseif (btn >= FR_BTN_ED_ZMIN_DEC && btn <= FR_BTN_ED_ZMAX_INC) // FOG-FASE5/F
+            _ApplyEditorStep(state, btn); // FOG-FASE5/F
+            state.erro := ""; // FOG-FASE5/F
+            SetEditorState(who, state); // FOG-FASE5/F
+        elseif (btn == FR_BTN_ED_ZFADE_DEC || btn == FR_BTN_ED_ZFADE_INC) // FOG-FASE6/G
+            _ApplyEditorStep(state, btn); // FOG-FASE6/G
+            state.erro := ""; // FOG-FASE6/G
+            SetEditorState(who, state); // FOG-FASE6/G
         elseif (btn >= FR_BTN_ED_HELP_DENSITY && btn <= FR_BTN_ED_HELP_COLOR)
             var var_name := _ButtonIdToVarName(btn);
             if (Len(var_name) > 0)
                 ShowFogTooltip(who, var_name);
             endif
+        elseif (btn == FR_BTN_ED_HELP_ZMIN || btn == FR_BTN_ED_HELP_ZMAX || btn == FR_BTN_ED_HELP_ZFADE) // FOG-FASE5/F FOG-FASE6/G
+            var var_name_z := _ButtonIdToVarName(btn); // FOG-FASE5/F
+            if (Len(var_name_z) > 0) // FOG-FASE5/F
+                ShowFogTooltip(who, var_name_z); // FOG-FASE5/F
+            endif // FOG-FASE5/F
         elseif (btn == FR_BTN_ED_TESTAR)
             _ReadEdRadios(result, state);
             SetEditorState(who, state);
             SendFogTestPacket(who, state);
         elseif (btn == FR_BTN_ED_CRIAR)
             _ReadEdRadios(result, state);
+            if (state.world_z_min > state.world_z_max) // FOG-FASE5/F
+                state.erro := "z min não pode ser maior que z max."; // FOG-FASE5/F
+                SetEditorState(who, state); // FOG-FASE5/F
+            else // FOG-FASE5/F
             var is_edit := (Len(state.editing) > 0);
             var region  := _StateToRegionStruct(state, "manual");
             var saved   := SaveRegion(region);
@@ -1184,6 +1271,7 @@ function ShowFogRegionManualEditor(who)
                 SendSysMessage(who, "[FOG] Região '" + region.Name + "' " + msg_verb + ".");
                 return 1;
             endif
+            endif // FOG-FASE5/F
         elseif (btn == FR_BTN_WIZARD_VOLTAR)
             SendFogOffToGm(who);
             if (Len(state.editing) > 0)
@@ -1269,6 +1357,9 @@ function _PopulateEditorStateFromRegion(who, region)
     state.+color_r            := region.ColorR;
     state.+color_g            := region.ColorG;
     state.+color_b            := region.ColorB;
+    state.+world_z_min        := region.WorldZMin;  // FOG-FASE5/F
+    state.+world_z_max        := region.WorldZMax;  // FOG-FASE5/F
+    state.+world_z_fade       := region.FalloffZ;   // FOG-FASE6/G
     state.+editing            := region.Name;
     SetEditorState(who, state);
 endfunction

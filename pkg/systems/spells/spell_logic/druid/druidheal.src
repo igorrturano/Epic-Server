@@ -10,6 +10,7 @@ include "include/say";
 include "include/tileEffects";
 include ":attributes:attributes";
 include ":spells:Controller/SpellController";
+include ":spells:Controller/SpellEffectBuilder";
 include ":wrappers:Objects/Model/MobileWrapper";
 
 program SpellScript(params)
@@ -71,25 +72,23 @@ program SpellScript(params)
 	var hot_remainder := hot_total - (hot_base_tick * hot_ticks);
 	var duration := hot_ticks * hot_tick_interval;
 
-	var opts := struct{};
-	opts.+buff_category := "druid_hot";
-	opts.+displayname := "Cura Leve";
-	opts.+desc := $"+{hot_base_tick} HP / tick";
-	opts.+maintainable := 1;
-	opts.+on_apply_script := ":spells:shared/playApplyFX";
-	opts.+on_apply_params := struct{
-		fx := FX_SPARK_EFFECT,
-		fx_speed := 2,
-		fx_duration := 2,
-		sound := SFX_SPELL_HEAL
-	};
-	opts.+tick_script := ":spells:spell_logic/druid/druidhealTick";
-	opts.+tick_interval := hot_tick_interval;
-	opts.+tick_params := struct{
-		base_tick := hot_base_tick,
-		remainder := hot_remainder,
-		total_ticks := hot_ticks
-	};
+	var opts := SpellEffectBuilder()
+		.SetCategory("druid_hot")
+		.SetDisplayName("Cura Leve")
+		.SetDesc($"+{hot_base_tick} HP / tick")
+		.SetMaintainable(1)
+		.SetOnApply(":spells:shared/playApplyFX", struct{
+			fx := FX_SPARK_EFFECT,
+			fx_speed := 2,
+			fx_duration := 2,
+			sound := SFX_SPELL_HEAL
+		})
+		.SetTickInterval(hot_tick_interval)
+		.SetTickHeal(struct{ base := hot_base_tick, remainder := hot_remainder })
+		.SetTickPresentation(TickPresentation()
+			.SetFx(FX_YELLOW_SPARKLE, 2, 2)
+			.SetCasterFeedback(1))
+		.ToOpts();
 
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
 

@@ -54,7 +54,7 @@ class ProfaneSentence(CombatAbility)
         // Religion-specific effects on target
         case (religiao)
             VENERATIO:
-                PlayObjectCenteredEffectHuefx(targ, 0x54b3, 10, 20, 1254, 1);
+                PlayObjectCenteredEffectEx(targ, 0x54b3, 10, 20, 1254, 1);
                 PlaySoundEffect(targ, 0x1FB);
                 SetCooldown(targ, "silence", theology_bonus);
 

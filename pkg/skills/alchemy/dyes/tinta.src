@@ -21,9 +21,9 @@ program drink_blue(who, potion)
 	endif
 	if (what.objtype == 0x0FAB)
 		what.color := potion.color;
-		Empty_bottle(who, potion);
+		Empty_bottle(who, potion, 0);
 		SetObjProperty(what, "fullness", 10);
-		what.name := "Um balde de tinta cheio";
+		what.name := "Balde de tinta cheio";
 	else
 		SendSysMessage(who, "Voce precisa usar no balde de tintas");
 	endif

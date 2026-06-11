@@ -1,36 +1,56 @@
-use uo;
-use cfgfile;
-
 include ":dyes:dyes";
 
 program UseTub(mobile, dyetub)
-	if (!ReserveItem(dyetub))
-		SendSysMessage(mobile, "Esta tina jah esta em uso.");
+	if(!ReserveItem(dyetub))
+		SendSysMessage(mobile, "Este balde ja esta em uso!");
 		return 0;
 	endif
 
-	SendSysMessage(mobile, "O que vc quer usar nesta tina?");
+	SendSysMessage(mobile, "O que deseja Pintar?");
 	var targ := target(mobile);
 
 	if (!targ)
 		SendSysMessage(mobile, "Cancelled");
 		return;
-	elseif (!ReserveItem(targ))
-		SendSysMessage(mobile, "Isso jah esta em uso.");
+	elseif(!ReserveItem(targ))
+		SendSysMessage(mobile, "Este balde ja esta em uso!");
 		return 0;
 	endif
 
-	var dist := distance(mobile, targ);
-	if (dist > 1)
-		SendSysMessage(mobile, "Esta muito longe!");
-		return;
+	if (targ.objtype == 0xFAB || targ.objtype == 0x5EBE)
+		SendSysMessage(mobile, "Voce nao pode pintar outro balde de tinta.");
+		return 0;
 	endif
 
 	if (CanDye(targ) || mobile.cmdlevel)
 		PlaySoundEffect(mobile, 0x23F);
 		targ.color := dyetub.color;
+		reduce_container_fullness (mobile, dyetub);
 	else
-		SendSysMessage(mobile, "Voce nao pode pintar isso.");
+		SendSysMessage(mobile, "Nao pode pintar isso!");
 	endif
 
 endprogram
+
+function reduce_container_fullness (byref character, byref container)
+	//sendsysmessage(character, " " + container);
+	if (GetObjProperty(container, "tintainfinita"))
+		return;
+	endif
+
+	var fullness := GetObjProperty (container, "fullness");
+
+	var cfgfile := ReadConfigFile( "itemdesc" );
+
+	if (!fullness)
+		container.color := 0;
+	elseif (fullness > 1)
+		fullness -= 1;
+		SetObjProperty (container, "fullness", fullness);
+		container.name := "balde com " + fullness + " cargas de tinta";
+	else
+		container.color :=0;
+		SendSysMessage(character, "acabou a tinta!");
+		container.name := "balde de tinta vazio";
+	endif
+endfunction  

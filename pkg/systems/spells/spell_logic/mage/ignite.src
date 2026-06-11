@@ -11,14 +11,16 @@ include ":spells:Controller/SC_Damage";
 include ":charactercreation:resists";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include "include/tileEffects";
 include ":spells:Controller/SpellController";
+include ":spells:Controller/SpellEffectBuilder";
 include ":wrappers:Objects/Model/MobileWrapper";
 
 program cast_incinerar(params)
 	var caster := params[1];
 	var targ := params[2];
 	var spellinfo := params[3];
-	var spell_circle := spellinfo.Circle;
+	var spell_circle := CInt(spellinfo.Circle[1]);
 	var spell_school := spellinfo.School;
 	params := 0;
 
@@ -28,16 +30,14 @@ program cast_incinerar(params)
 		return 0;
 	endif
 
-	// Block recast while Incinerar is still active on the target.
-	var existing := MobileWrapper(targ).GetProperty($"SpellOpts_{CInt(spellinfo.id)}");
-	if (existing && !existing.errortext)
-		SendSysMessageEx(caster, "O alvo ja esta incinerando!", SSM_FAIL);
-		return 0;
-	endif
-
+	// Recast on a still-burning target deals the impact again and refreshes
+	// the DoT (no stacking — the new SC_ApplyEffect replaces the prior one
+	// via instance_id; the old tick driver exits). Players keep targets
+	// burning indefinitely by paying mana per recast.
 	PlayObjectCenteredEffect(targ, 0xDC06, 15, 10);
 	PlaySoundEffect(targ, 0x357);
 	var impact := epicSpellDamageRoll(caster, spell_circle, spell_school);
+	impact := bonusSpellDamageForSpecialists(caster, impact, spell_school);
 	SC_DealDamage(caster, targ, CInt(spellinfo.id), cint(impact), DAMAGE_TYPE::FIRE);
 
 	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
@@ -66,15 +66,19 @@ program cast_incinerar(params)
 	PrintTextAbove(targ, "*incinerando*");
 	SendSysMessageEx(targ, "Voce esta pegando fogo!", SSM_FAIL);
 
-	var opts := struct{};
-	opts.+buff_category := "fire_dot";
-	opts.+displayname := "Incinerar";
-	opts.+desc := "1d4+1 dano / tick";
-	opts.+tick_script := ":spells:spell_logic/mage/incinerarTick";
-	opts.+tick_interval := tick_interval;
-	opts.+tick_params := struct{
-		total_ticks := total_ticks
-	};
+	var opts := SpellEffectBuilder()
+		.SetCategory("fire_dot")
+		.SetDisplayName("Incinerar")
+		.SetDesc("1d4+1 dano / tick")
+		.SetTickInterval(tick_interval)
+		.SetTickDamage(struct{ dice := "1d4", bonus := 1, type := DAMAGE_TYPE::FIRE })
+		.SetTickPresentation(TickPresentation()
+			.SetFx(FX_SMALL_FIRE_MAGIC, 10, 15)
+			.SetSound(0x357)
+			.SetPeriodicEmote("As chamas continuam a te consumir!", 3, SSM_FAIL)
+			.SetFinalOverhead("*as chamas se extinguem*")
+			.SetFinalEmote("As chamas finalmente se apagam.", SSM_INFO))
+		.ToOpts();
 
 	SC_ApplyEffect(caster, targ, opts, duration, CInt(spellinfo.id));
 

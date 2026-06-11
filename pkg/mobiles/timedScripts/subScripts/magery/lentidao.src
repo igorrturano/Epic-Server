@@ -43,6 +43,7 @@ function Slowdown(who, byref info)
 	info.dexmod := penalty;
 
 	AP_ModifyStatMod(who, DEXTERITY, 0 - penalty);
+	PlayerSpeedSlower(who, 1);
 
 	SetObjProperty(who, "#Slowness", info);
 endfunction
