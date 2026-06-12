@@ -19,13 +19,16 @@ var itemdesc_cache := dictionary{};
 const LORE_DROPPED_DATAFILE := ":unicos:lore_dropped";
 
 // Equipment policy for loot — see CreateItemProcess.
-//   Excluded metals (Cobre / Prata / Ouro): reserved for coin objtypes,
-//     never picked as a gear material.
+//   Material picker blocklist: empty by design. Cobre/Prata/Ouro são
+//     coin lastro (MoneyerMenu converte ingot → moeda), mas usar como
+//     MATERIAL de gear é só label cosmético, não vaza economy. O leak
+//     real é drop direto de barra (objtype 0x6465/0x6993/0x630e) como
+//     item, controlado nos .cfg de loot, não aqui.
 //   Chest tier-2 pin: at tier=2 + MESMO_TIER the metal bucket holds
 //     only Bronze, so chest metal gear is uniformly Bronze without any
 //     enumeration. Non-metal components pick freely from their
 //     respective tier-2 pool (wood=Salgueiro, cloth=Algodão, etc.).
-var LOOT_EXCLUDED_METALS := array{ 0x6465, 0x6993, 0x630e };
+var LOOT_EXCLUDED_METALS := array{};
 const LOOT_CHEST_METAL_TIER := 2;
 
 // Phase 2 — coin tier filter helpers.
@@ -353,7 +356,13 @@ function CreateItemProcess(container, parsed, qtd, source := 0)
         );
     endif
 
-    if (!item)
+    // GeraItemComplexo retorna `error` quando o objtype não tem receita
+    // de crafting (gore, reagent, gem, scroll, alchemy, ingot, lore item,
+    // etc.). Em eScript `error` é truthy — `!error == false`. Precisa
+    // tri-check canônico (vide linha 140): `!x` (null) OR `x == error`
+    // (bare error) OR `x.errortext` (struct error). Sem isso, fallback
+    // nunca dispara e qualquer item não-craftable evapora silencioso.
+    if (!item || item == error || item.errortext)
         item := CreateItemInContainer(container, parsed.name);
         Loot_InitBottle(item);
     endif
