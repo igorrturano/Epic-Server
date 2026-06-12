@@ -196,25 +196,8 @@ function SendPetAway(character)
 endfunction
 
 function IsPackAnimal(pet)
-	// Identidade canonica do packhorse e o graphic (291/292), porque um Horse3
-	// vira packhorse ao receber Mochila de Packhorse trocando so o graphic
-	// (mochilaPackhorse.inc:InstallMochilaOnPackhorse). Mantemos o match por
-	// npctemplate como redundancia: cobre casos em que algo desincronizou o
-	// graphic e ainda detecta variantes nomeadas.
-	if (pet.graphic == 291 || pet.graphic == 292)
-		return 1;
-	endif
-
 	var tmpl := Lower(CStr(pet.npctemplate));
-	if (tmpl["packhorse"] || tmpl["packllama"])
-		return 1;
-	endif
-
-	// Horse3 e o unico cavalo nao-packhorse que se converte em packhorse via
-	// mochila. Se ainda esta com graphic de cavalo normal, nao bloqueia.
-	if (tmpl["horse3"] && GetObjProperty(pet, "beforepack"))
-		return 1;
-	endif
-
-	return 0;
+	return ( tmpl == ":epicai:packhorse"  || tmpl == "packhorse"
+	      || tmpl == ":epicai:packhorse2" || tmpl == "packhorse2"
+	      || tmpl == ":epicai:packllama"  || tmpl == "packllama" );
 endfunction
