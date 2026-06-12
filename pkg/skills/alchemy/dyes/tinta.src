@@ -15,12 +15,14 @@ program drink_blue(who, potion)
 	endif
 	SendSysMessage(who, "Escolha o balde de tintas");
 	var what := Target(who, TGTOPT_CHECK_LOS);
+	var cfg := ReadConfigFile(":*:itemdesc");
+	var cor := (cfg[potion.objtype].Color);
 	if (!what)
 		SendSysMessage(who, "Cancelado");
 		return;
 	endif
 	if (what.objtype == 0x0FAB)
-		what.color := potion.color;
+		what.color := cor;
 		Empty_bottle(who, potion, 0);
 		SetObjProperty(what, "fullness", 50);
 		what.name := "Balde de tinta cheio";
