@@ -22,7 +22,7 @@ program drink_blue(who, potion)
 	if (what.objtype == 0x0FAB)
 		what.color := potion.color;
 		Empty_bottle(who, potion, 0);
-		SetObjProperty(what, "fullness", 10);
+		SetObjProperty(what, "fullness", 50);
 		what.name := "Balde de tinta cheio";
 	else
 		SendSysMessage(who, "Voce precisa usar no balde de tintas");
