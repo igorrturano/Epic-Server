@@ -13,9 +13,6 @@ program canInsert(mobile, container, movetype, inserttype, item, existing_stack,
 		SendSysMessage(mobile, "Voce nao pode fazer isto montado.");
 		return 0;
 	endif
-	if (!mobWrapper.HasFreeHand())
-		return 0;
-	endif
 	if (mobile.frozen || mobile.paralyzed)
 		SendSysMessage(mobile, "Voce esta paralizado.");
 		return 0;

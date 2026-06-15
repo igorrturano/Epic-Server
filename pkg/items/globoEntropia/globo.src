@@ -50,19 +50,19 @@ endfunction
 
 function _GetObservacao(entropy)
     if (entropy <= ENT_CAOS_ABSOLUTO)
-        return "...redemoinhos violetas e negros giram freneticamente, cruzados por raios de energia que se partem em mil direções sem sentido. Você sente a realidade ao redor vacilando sob seus dedos.";
+        return "...redemoinhos violetas giram freneticamente, cruzados por raios que se partem em mil direções. A realidade vacila.";
     elseif (entropy <= ENT_CAOS_PROFUNDO)
-        return "...espirais nebulosas de azul profundo giram sobre si mesmas, absorvendo a luz que tenta emergir do centro. Sussurros incompreensíveis ecoam brevemente em sua mente.";
+        return "...espirais de azul profundo absorvem a luz que tenta emergir do centro. Sussurros ecoam em sua mente.";
     elseif (entropy <= ENT_CAOS_LEVE)
-        return "...correntes turquesa serpenteiam em espirais lentas, como fumaça presa num vendaval contido, sem jamais encontrar repouso. Algo parece inquieto no éter.";
+        return "...correntes turquesa serpenteiam em espirais lentas, sem encontrar repouso. Algo está inquieto no éter.";
     elseif (entropy < ENT_ORDEM_LEVE)
-        return "...uma luz verde e serena pulsa no centro do globo como um coração tranquilo, irradiando para as bordas em ondas suaves e regulares. O mundo respira.";
+        return "...uma luz verde pulsa no centro como um coração tranquilo, irradiando em ondas suaves. O mundo respira.";
     elseif (entropy < ENT_ORDEM_PROFUNDA)
-        return "...feixes dourados partem do centro e tocam as paredes do cristal como raios de um sol nascente preso no interior, organizados e constantes. A ordem começa a ganhar terreno.";
+        return "...feixes dourados partem do centro como um sol nascente preso no interior. A ordem ganha terreno.";
     elseif (entropy < ENT_ORDEM_ABSOLUTA)
-        return "...chamas âmbar giram em movimentos lentos e deliberados ao redor de um núcleo brilhante, envoltas numa luz quente que aquece levemente suas mãos. A virtude prevalece visivelmente sobre as sombras.";
+        return "...chamas âmbar giram ao redor de um núcleo brilhante, em luz quente e constante. A virtude prevalece.";
     else
-        return "...uma luz vermelha e ofuscante emana em pulsos rítmicos do núcleo, com veios de energia carmesim que percorrem toda a superfície interna do cristal em padrões perfeitos. A ordem tomou Valtheris por completo.";
+        return "...uma luz vermelha emana em pulsos rítmicos, com veios carmesim em padrões perfeitos. A ordem tomou Valtheris.";
     endif
 endfunction
 

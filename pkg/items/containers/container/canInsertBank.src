@@ -12,9 +12,6 @@ program canInsert(mobile, container, movetype, inserttype, item, existing_stack,
 		SendSysMessage(mobile, "Voce nao pode fazer isto montado.");
 		return 0;
 	endif
-	if (!mobWrapper.HasFreeHand())
-		return 0;
-	endif
 	if (mobile.frozen || mobile.paralyzed)
 		SendSysMessage(mobile, "Voce esta paralizado.");
 		return 0;
@@ -86,7 +83,10 @@ program canInsert(mobile, container, movetype, inserttype, item, existing_stack,
 			   	0xec29,        // grimório
 			   	
 			   	0xE9C1,        // livro de pesquisa
-			   	
+
+			   	0xFD3A,
+			   	0xFD3B,        // folhas de receita (doméstica, madeira)
+
 			   	0x6161,
 			   	0x6157,
 			   	0x6158,

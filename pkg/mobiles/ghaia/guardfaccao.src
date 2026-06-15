@@ -50,6 +50,7 @@ include ":tn:cooldown";
 include ":faccao:npc";
 include ":faccao:faccao";
 include ":faccao:npc_laws_enforce";
+include ":faccao:include/voice_aliases";
 include "include/dungeons";
 include "include/utils";
 include "include/epicNPCUtils";
@@ -223,6 +224,18 @@ program NPCMonitor()
 			// DoObjectiveGuard();
 		endif
 
+		// Guard cross-realm: NPC nunca opera fora do realm canonico da guild.
+		if (EnforceGuildRealm())
+			fighting := 0;
+			following := 0;
+			warning := 0;
+			SetOpponent(0);
+			SetWarMode(0);
+			wait_time := 1;
+			sleepms(100);
+			continue;
+		endif
+
 		// Controle de território: staff usa rect hardcoded, player usa rect da guild.
 		if (GetObjProperty(me, "guild"))
 			if (GetObjProperty(me, "tipo_faccao") == "staff")
@@ -270,8 +283,7 @@ program NPCMonitor()
 					else
 						_dest := GetGuildCenter(guild, me.z);
 					endif
-					if (_dest)
-						RunTowardLocation(_dest.x, _dest.y);
+					if (MoveOrTeleportToGuildPoint(_dest))
 						wait_time := 0;
 					endif
 				endif
@@ -474,6 +486,11 @@ function ResolveSpeech(ev, source := 0, order := 0)
 	var text := lower(ev.text);
 	var name := lower(me.name);
 
+	// Aplica aliases customizados de voz da guild (slot broadcast inclusive)
+	if (guild)
+		text := ApplyVoiceAliases(text, guild);
+	endif
+
 	if (!source)
 		var privs := guild.GetProp(cstr(ev.source.serial));
 		var user_subguilds := ev.source.guild.getProp("subguilds");
@@ -613,7 +630,7 @@ function ProcessDoubleClick(ev)
 	endif
 
 	var gump := GFCreateGump(220, 70);
-	GFResizePic(gump, 0, 0, 0x254E, 125, 180);
+	GFResizePic(gump, 0, 0, 0x254E, 125, 240);
 
 	GFTextLine(gump, 30, 15, 2100, "Ir");
 	GFTooltipText(gump, "Ordena o guarda ir ate um local");
@@ -643,6 +660,19 @@ function ProcessDoubleClick(ev)
 	GFTooltipText(gump, "Define a direcao para onde o guarda ficara olhando.");
 	GFAddButton(gump, 15, 137, 2117, 2118, 1, 80);
 
+	GFTextLine(gump, 30, 155, 2100, "Comunicacao");
+	GFTooltipText(gump, "Configura palavras-chave de voz para comandar este guarda.");
+	GFAddButton(gump, 15, 157, 2117, 2118, 1, 90);
+
+	GFTextLine(gump, 30, 175, 2100, "Equipar");
+	GFTooltipText(gump, "Equipa um item no guarda.");
+	GFAddButton(gump, 15, 177, 2117, 2118, 1, 91);
+
+	GFTextLine(gump, 30, 195, 2100, "Despir");
+	GFTooltipText(gump, "Remove todos os itens do guarda e coloca na sua mochila.");
+	GFAddButton(gump, 15, 197, 2117, 2118, 1, 92);
+
+
 	var input := GFSendGump(ev.source, gump)[0];
 	case (input)
 		70: ResolveSpeech(0, ev.source, "Ir ate"); break;
@@ -652,7 +682,32 @@ function ProcessDoubleClick(ev)
 		40: ResolveSpeech(0, ev.source, "Patrulha"); break;
 		50: ResolveSpeech(0, ev.source, "Manter Posicao"); break;
 		80: ShowFacingGump(ev.source); break;
+		90: OpenCommunicationGump(ev.source, guild); break;
+		91: DoEquipGump(ev.source); break;
+		92: DoStripGump(ev.source); break;
 	endcase
+endfunction
+
+function DoEquipGump(who)
+	SendSysMessage(who, "O que deve ser equipado?");
+	var what := Target(who);
+	if (!what)
+		return SendSysMessage(who, "Cancelado.");
+	endif
+	var res := EquipItem(me, what);
+	if (res)
+		PrintTextAbove(me, "Equipado.");
+	else
+		SendSysMessage(who, "Nao foi possivel equipar: " + res.errortext);
+	endif
+endfunction
+
+function DoStripGump(who)
+	foreach item in (EnumeratePhysicalItems(me))
+		MoveItemToContainer(item, who.backpack);
+		SleepMS(2);
+	endforeach
+	PrintTextAbove(me, "Como desejar.");
 endfunction
 
 function ShowFacingGump(who)
@@ -730,9 +785,9 @@ function Patrol()
 		else
 			SetObjProperty(me, "patrol_next", 1);
 		endif
-		SetCooldown(me, "patrol_stand", (randomInt(3) + 1) * 60);
+		SetCooldown(me, "patrol_stand", randomInt(15) + 15); // vigilia 15-30s (antes 60-240s)
 	else
-		wait_time := 1;
+		wait_time := 0; // anda na velocidade nativa do POL — antes esperava 1s/tile no loop
 	endif
 endfunction
 
@@ -741,21 +796,28 @@ function SendToStartPosition()
 		return 1;
 	endif
 
+	// Realm canonico da guild (com fallback para realm corrente do NPC)
+	var _dest_realm := me.realm;
+	if (guild)
+		var _gr := GetGuildRealm(guild);
+		if (_gr) _dest_realm := _gr; endif
+	endif
+
 	if (fix_location)
 		if (CoordinateDistance(fix_location.x, fix_location.y, me.x, me.y) > 20)
-			if (HasPlayerNearLocation(fix_location.x, fix_location.y, me.realm))
+			if (HasPlayerNearLocation(fix_location.x, fix_location.y, _dest_realm))
 				return 0;
 			endif
 		endif
 
-		MoveObjectToLocation(me, fix_location.x, fix_location.y, fix_location.z, me.realm,
+		MoveObjectToLocation(me, fix_location.x, fix_location.y, fix_location.z, _dest_realm,
 					   MOVEOBJECT_FORCELOCATION);
 		me.facing := fix_location.facing;
 	endif
 
 	if (patrolling)
 		if (CoordinateDistance(patrolling.x, patrolling.y, me.x, me.y) > 20)
-			if (HasPlayerNearLocation(patrolling[1].x, patrolling[1].y, me.realm))
+			if (HasPlayerNearLocation(patrolling[1].x, patrolling[1].y, _dest_realm))
 				return 0;
 			endif
 
@@ -763,7 +825,7 @@ function SendToStartPosition()
 				procura_em_volta(me);
 			endif
 
-			MoveObjectToLocation(me, patrolling[1].x, patrolling[1].y, patrolling[1].z, me.realm,
+			MoveObjectToLocation(me, patrolling[1].x, patrolling[1].y, patrolling[1].z, _dest_realm,
 								  MOVEOBJECT_FORCELOCATION);
 		endif
 	endif
@@ -780,6 +842,15 @@ function FightADV(opponent := 0)
 			return;
 		elseif (IsMemberOfFaccao(guild, opponent))
 			if (opponent.IsA(POLCLASS_NPC))
+				return;
+			endif
+		endif
+
+		// Nunca engaja alvo fora do realm da guild — evita perseguicao cross-realm
+		// (NPC seguindo player que cruza moongate/teleporter e some no realm errado).
+		if (guild)
+			var _g_realm := GetGuildRealm(guild);
+			if (_g_realm && opponent.realm && opponent.realm != _g_realm)
 				return;
 			endif
 		endif

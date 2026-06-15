@@ -72,7 +72,9 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 				Dice(GetDamageByTier(this.OffDamageTier.GetBluntDamage()))
 			);
 			this.DamageMods := DamageModCollection();
-			this.SetDamageMod(DamageModFabricacao(this.GetObjRef() ? this.GetObjRef() : this.GetTemplate()));
+			// Template-only: ObjRef = IsTemplateException (truthy). Passa `this`
+			// pro DamageModFabricacao ler CProps via UObjectWrapper branch.
+			this.SetDamageMod(DamageModFabricacao(this.GetObjRef() is @Exception ? this : this.GetObjRef()));
 			if (this.GetObjRef())
 				this.SetDamageMod(DamageModEncantar(this.GetObjRef()));
 			endif
@@ -285,7 +287,8 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 * 
 	 */
 	function SetDamageMod(this,byref damageMod)
-		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
+		// Sem guarda contra ObjRef=Exception: este setter so muta this.DamageMods,
+		// nunca o ObjRef — funciona em wrapper template-only.
 		var ret := this.DamageMods.InsertMod(damageMod);
 
 		if(ret is @Exception) return this.ret; endif
