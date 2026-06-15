@@ -10,6 +10,8 @@ include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include ":spells:Controller/SpellController";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 
 const BARKSKIN_SPELL_ID := 715;
 
@@ -174,7 +176,7 @@ program SpellScript(params)
 					SendSysMessageEx(who, "Você baniu a criatura invocada!", SSM_INFO);
 					PlaySoundEffect(targ, SFX_SPELL_DISPEL);
 					PlayObjectCenteredEffect(targ, FX_EXPLODE_3, 10, 10);
-					ApplyRawDamage(targ, 1500);
+					DealDamage(targ, 1500, DAMAGE_TYPE::FORCED, who);
 					return 1;
 				else
 					SendSysMessageEx(who, "A criatura resistiu ao banimento.", SSM_FAIL);
