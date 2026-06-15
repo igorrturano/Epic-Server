@@ -53,7 +53,7 @@ program spell_Pressagio(params)
 
 	// Retorna ao corpo original
 	unpossess(who);
-	who.hidden := 0;
+	who.concealed := 0;
 	MoveObjectToLocation(who, orig_x, orig_y, orig_z, orig_realm, MOVEOBJECT_FORCELOCATION);
 	ApplyDamage(ethereal, 9999);
 
@@ -61,9 +61,9 @@ program spell_Pressagio(params)
 endprogram
 
 function CreateEtherealCopy(who, targ)
-	var template := ":brainai:humanmale";
+	var template := ":epicai:humanmale";
 	if (who.gender == 1)
-		template := ":brainai:humanfemale";
+		template := ":epicai:humanfemale";
 	endif
 
 	var copy := CreateNPCFromTemplate(template, targ.x, targ.y, targ.z, 0, who.realm);

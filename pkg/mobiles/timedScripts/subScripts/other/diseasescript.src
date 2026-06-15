@@ -9,7 +9,8 @@ program diseaseScript(params)
 
 	// Verifica se é uma falha de cura
 	var diseases_system := GetObjProperty(mobile, "Diseases_System");
-		if (!diseases_system)
+		// error e non-struct sao truthy em eScript — checar explicitamente
+		if (diseases_system == error || TypeOf(diseases_system) != "Struct")
 			diseases_system := struct{};
 		endif
 	var falhou_cura := diseases_system.falhou_cura;
