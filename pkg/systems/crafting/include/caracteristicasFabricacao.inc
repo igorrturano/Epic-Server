@@ -115,14 +115,14 @@ function PegaComponenteFabricacao(item, caracteristica := 0)
 endfunction
 
 function PegaPropFabricadoMontado(objeto)
-	var propFabricadoMontado;
-	if( objeto.isA(POLCLASS_ITEM))
-		propFabricadoMontado := GetObjProperty(objeto, PROPNAME_FABRICADO);
-	elseif(objeto is @UObjectWrapper)
-		propFabricadoMontado := objeto.GetProperty(PROPNAME_FABRICADO);
-	else
-		propFabricadoMontado := objeto.CProps[PROPNAME_FABRICADO];
+	// Discrimina UObjectWrapper -> struct -> Item. Em struct,
+	// objeto.isA(POLCLASS_ITEM) retorna error truthy (falsa positiva), por
+	// isso OT_STRUCT vem antes do isA.
+	if (objeto is @UObjectWrapper)
+		return objeto.GetProperty(PROPNAME_FABRICADO);
+	elseif (TypeOfInt(objeto) == OT_STRUCT)
+		return objeto.CProps[PROPNAME_FABRICADO];
+	elseif (objeto.isA(POLCLASS_ITEM))
+		return GetObjProperty(objeto, PROPNAME_FABRICADO);
 	endif
-
-	return propFabricadoMontado;
 endfunction

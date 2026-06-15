@@ -9,6 +9,8 @@ include ":brainAI:npcCommands";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 include "include/epicEconomyAudit";
+include ":equipsys:Controller/ArmorController";
+include ":combat:Model/ResistModFabricacao";
 
 //Constantes de ID de Botões de Gump
 const BOTAO_ITENS_COLOCAR_A_VENDA := 0x1;
@@ -1401,10 +1403,17 @@ function GetTooltipText(item_template, who)
 				xDesc := xDesc + white + item_template.swordmage + "<br>";
 			endif
 		elseif (elem.TipoProtecao)
-			//props de armaduras
-			//				if (cint(elem.strrequired) > 0)
-			//					xDesc := xDesc + "Min Str: " + elem.strrequired + "<br>";
-			//				endif
+			var tipoProtecao := elem.TipoProtecao;
+			var isShield := Upper(SplitWords(tipoProtecao)[1]) == "ESCUDO";
+
+			if (isShield)
+				var shieldAttrs := GetShieldModsByProtection(tipoProtecao);
+				if (!(shieldAttrs is @Exception))
+					xDesc := xDesc + "Bonus Bloqueio: " + shieldAttrs.GetParryBonus() + "<br>";
+					xDesc := xDesc + "Delay Bloqueio: " + shieldAttrs.GetParryDelay() + "<br>";
+				endif
+			endif
+
 			if (elem.DexPenalty || item_template.penaltybonus)
 				xDesc := xDesc + "Redutor Dex : " + getDexPenaltyTemplate(elem, item_template) + "<br>";
 			endif
@@ -1414,20 +1423,76 @@ function GetTooltipText(item_template, who)
 			if (elem.parrydelay || item_template.parrydelay_mod)
 				xDesc := xDesc + "Delay Bonus: " + getParryDelayTemplate(elem, item_template) + "<br>";
 			endif
-			xDesc := xDesc + fisico + "Fisico " + (elem.PhysicalResist + item_template.resist_physical_mod) + "<br>";
-			xDesc := xDesc + "Tipo: " + CStr(elem.TipoProtecao) + "<br>";
 
-			if (elem.ColdResist + item_template.resist_cold_mod != 0)
-				xDesc := xDesc  + blueice + "Frio " + (elem.ColdResist + item_template.resist_cold_mod) + "<br>";
+			// Mesma fonte que o ArmorWrapper usa no paperdoll:
+			// base por tier (Cort/Perf/Cont) + bônus de fabricação (qualidade + material).
+			// TODO(merchant-tooltip): Encantar (ResistModEncantar) e Runa (ResistModRuna)
+			// leem props do ObjRef; vendor opera em template, então itens depositados
+			// encantados/rúnicos não terão esses bônus refletidos no tooltip do vendor.
+			var basePhys := GetResistPhysicalByProtection(tipoProtecao);
+			var fabMod := ResistModFabricacao(item_template).GetMod();
+
+			var slashRes := 0;
+			var pircRes := 0;
+			var bluntRes := 0;
+			if (!(basePhys is @Exception))
+				slashRes := CInt(basePhys.GetSlashResist()) + CInt(fabMod.GetSlashResist());
+				pircRes  := CInt(basePhys.GetPiercingResist()) + CInt(fabMod.GetPiercingResist());
+				bluntRes := CInt(basePhys.GetBluntResist()) + CInt(fabMod.GetBluntResist());
 			endif
-			if ( elem.FireResist + item_template.resist_fire_mod != 0)
-				xDesc := xDesc + redfire + "Fogo " + (elem.FireResist + item_template.resist_fire_mod) + "<br>";
+
+			// Cap por tier (50/60/70) — espelha ArmorWrapper._GetTypeCap.
+			var cap := 0;
+			if (tipoProtecao["Armadura Leve"]) cap := 50; endif
+			if (tipoProtecao["Armadura Media"]) cap := 60; endif
+			if (tipoProtecao["Armadura Pesada"]) cap := 70; endif
+			if (cap > 0)
+				if (slashRes > cap) slashRes := cap; endif
+				if (pircRes > cap) pircRes := cap; endif
+				if (bluntRes > cap) bluntRes := cap; endif
 			endif
-			if ( elem.EnergyResist + item_template.resist_energy_mod != 0)
-				xDesc := xDesc  + lilas + "Energia " + (elem.EnergyResist + item_template.resist_energy_mod) + "<br>";
+
+			if ((slashRes + pircRes + bluntRes) > 0)
+				var resistColor := ClassificaResistCor(tipoProtecao);
+				xDesc := xDesc + "Defesas: <br>";
+				if (slashRes > 0)
+					xDesc := xDesc + " Cort: " + resistColor + slashRes + "</BASEFONT><br>";
+				endif
+				if (pircRes > 0)
+					xDesc := xDesc + " Perf: " + resistColor + pircRes + "</BASEFONT><br>";
+				endif
+				if (bluntRes > 0)
+					xDesc := xDesc + " Cont: " + resistColor + bluntRes + "</BASEFONT><br>";
+				endif
+				xDesc := xDesc + "Tipo: " + CStr(tipoProtecao) + "<br>";
 			endif
-			if (elem.PoisonResist + item_template.resist_poison_mod != 0)
-				xDesc := xDesc  + softgreen + "Veneno " + (elem.PoisonResist + item_template.resist_poison_mod) + "<br>";
+
+			var fireResist   := CInt(elem.FireResist)   + CInt(item_template.resist_fire_mod)   + CInt(fabMod.GetFireResist());
+			var coldResist   := CInt(elem.ColdResist)   + CInt(item_template.resist_cold_mod)   + CInt(fabMod.GetColdResist());
+			var poisonResist := CInt(elem.PoisonResist) + CInt(item_template.resist_poison_mod) + CInt(fabMod.GetPoisonResist());
+			var energyResist := CInt(elem.EnergyResist) + CInt(item_template.resist_energy_mod) + CInt(fabMod.GetEnergyResist());
+
+			if (cap > 0)
+				if (fireResist > cap) fireResist := cap; endif
+				if (coldResist > cap) coldResist := cap; endif
+				if (poisonResist > cap) poisonResist := cap; endif
+				if (energyResist > cap) energyResist := cap; endif
+			endif
+
+			if (fireResist || coldResist || poisonResist || energyResist)
+				xDesc := xDesc + "<br> Resistência Mágica: <br>";
+				if (fireResist)
+					xDesc := xDesc + "Fogo: " + redfire + "+" + fireResist + "</BASEFONT><br>";
+				endif
+				if (coldResist)
+					xDesc := xDesc + "Frio: " + blueice + "+" + coldResist + "</BASEFONT><br>";
+				endif
+				if (poisonResist)
+					xDesc := xDesc + "Veneno: " + softgreen + "+" + poisonResist + "</BASEFONT><br>";
+				endif
+				if (energyResist)
+					xDesc := xDesc + "Energia: " + lilas + "+" + energyResist + "</BASEFONT><br>";
+				endif
 			endif
 		endif
 		var pplmage := item_template.magicwho; //magic lore

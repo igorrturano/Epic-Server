@@ -172,22 +172,29 @@ class UObjectWrapper(IUObjectWrapper)
 		return this.CProps;
 	endfunction
 
+	// Em wrapper template-only, ObjRef = IsTemplateException (truthy) — daí
+	// nao basta `ref ? ref : CProps`. Quando ref e item valido, usa GetProp/SetProp;
+	// senao cai em CProps; sem CProps, propaga ref (uninit ou Exception).
 	function GetProperty(this, propName)
-		if (this.GetObjRef() is @Exception && !this.GetCProps())
-			return this.GetObjRef();
+		var ref := this.GetObjRef();
+		if (ref && !(ref is @Exception))
+			return ref.GetProp(propName);
 		endif
-
-		return this.GetObjRef() ? this.GetObjRef().GetProp(propName) : this.GetCProps()[propName];
+		if (this.GetCProps())
+			return this.GetCProps()[propName];
+		endif
+		return ref;
 	endfunction
 
 	function SetProperty(this, propName, propValue)
-		if (this.GetObjRef() is @Exception && !this.GetCProps())
-			return this.GetObjRef();
+		var ref := this.GetObjRef();
+		if (ref && !(ref is @Exception))
+			return ref.SetProp(propName, propValue);
 		endif
-
-		return this.GetObjRef() ? this.GetObjRef().SetProp(propName, propValue) : this.GetCProps().insert(propName, propValue);
-
-		return this;
+		if (this.GetCProps())
+			return this.GetCProps().insert(propName, propValue);
+		endif
+		return ref;
 	endfunction
 
 	function EraseProperty(this, propName)
