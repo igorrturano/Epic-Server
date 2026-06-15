@@ -30,7 +30,7 @@ include ":expbar:expbar";
 include ":epicAI:epicai";
 include ":tn:cooldown";
 include ":hotbar:include/custombuff";
-include ":bounty:include/bountyCore";
+// include ":bounty:include/bountyCore";  // WIP: pacote bounty/ ainda nao commitado
 // include ":entropy:entropy";
 
 program core_npcDeath(params)
@@ -307,21 +307,22 @@ program core_npcDeath(params)
 	var template := GetObjProperty(corpse, "npctemplate"); // Set by the core.
 
 	// === Bounty Hook: Marca de Contrato sobre cadáver de alvo do pool ===
+	// WIP: pacote bounty/ ainda nao commitado — bloco desativado para destravar build.
 	// Rodar aqui (antes do NoCorpseCheck) garante que a prova fica no corpse
 	// caso ele seja preservado, e desaparece junto se o corpse for destruído.
 	// BC_ResolveActualKiller aplica as regras de atribuição: pet→dono,
 	// last-hit, sem split de party, sem most-damage (vide bountyCore.inc).
-	if (template)
-		var bounty_killer := 0;
-		var bounty_lastdamage := GetObjProperty(corpse, "LastDamage");
-		if (bounty_lastdamage && !bounty_lastdamage.errortext)
-			var ks := bounty_lastdamage.serial;
-			if (ks && !ks.errortext)
-				bounty_killer := SystemFindObjectBySerial(ks, SYSFIND_SEARCH_OFFLINE_MOBILES);
-			endif
-		endif
-		BC_DropProofOnCorpse(corpse, BC_ResolveActualKiller(bounty_killer));
-	endif
+	// if (template)
+	// 	var bounty_killer := 0;
+	// 	var bounty_lastdamage := GetObjProperty(corpse, "LastDamage");
+	// 	if (bounty_lastdamage && !bounty_lastdamage.errortext)
+	// 		var ks := bounty_lastdamage.serial;
+	// 		if (ks && !ks.errortext)
+	// 			bounty_killer := SystemFindObjectBySerial(ks, SYSFIND_SEARCH_OFFLINE_MOBILES);
+	// 		endif
+	// 	endif
+	// 	BC_DropProofOnCorpse(corpse, BC_ResolveActualKiller(bounty_killer));
+	// endif
 
 	var npc_cfg := NPC_GetNPCConfig(template);
 	var death_script;
