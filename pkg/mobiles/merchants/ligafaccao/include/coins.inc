@@ -1,8 +1,15 @@
+// coins.inc — Helpers de moedas (cobre/prata/ouro) para sistemas da Liga do Pacto Comum
+//
+// Uso: include ":ligafaccao:include/coins";
+//      var total := CountCoins(player);
+//      TakeCoins(player, 25);
+//
+// Conversão: 1 prata = 10 cobres, 1 ouro = 100 cobres. Pagamento consome moedas
+// de maior valor quando necessário e devolve troco em cobres.
+// Extraído de curandeiro.src para evitar duplicação.
+
 use uo;
 use os;
-
-// Sistema de moedas compartilhado pelos NPCs da Liga.
-// Extraído de curandeiro.src para evitar duplicação.
 
 const MOEDA_COBRE := 0xba63;
 const MOEDA_PRATA := 0xba64;
