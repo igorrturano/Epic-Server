@@ -25,7 +25,8 @@ function GetMemberPrivs(faccao, mobile)
          "above_guards" := 0, "above_merchants" := 0,
          "above_members" := 0, "giveprivs" := 0,
          "contractnpc" := 0,  "fixitems" := 0,
-         "unlockdoors" := 0,  "buyuniforms" := 0
+         "unlockdoors" := 0,  "buyuniforms" := 0,
+         "buycapes" := 0,     "recallnpc" := 0
       };
    endif
    return faccao.GetProp(cstr(mobile.serial));

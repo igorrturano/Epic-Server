@@ -7,6 +7,7 @@ include ":charactercreation:habilidades";
 include ":gumps:gumps";
 include ":gumps:yesNo";
 include "include/say";
+include ":chestspawn:include/trancaEspecial";
 
 var stones := {6255, 6250, 6251, 6252, 6253, 6254, 6249, 6256};
 var stands := {"", "", "", "", ""};
@@ -17,9 +18,16 @@ var enigma := {};
 var counter := 10;
 var marked_colors := dictionary{}; // Dicionário para armazenar cores marcadas
 
-function mastermind(who)
+function mastermind(who, container := 0)
     enigma := RandomSet(who);
-    
+
+    var is_esp := IsTrancaEspecial(container);
+    if (is_esp)
+        TrancaDebug("=== MASTERMIND INICIADO ===");
+        TrancaDebug("Player: " + who.name + " | Enigma: " + enigma);
+        TrancaDebug("Tentativas: 10 | Stones: 8", who);
+    endif
+
     // Inicializar dicionário de cores marcadas
     foreach stone in stones
         marked_colors[stone] := 0; // 0 = não marcada, 1 = marcada
@@ -292,16 +300,20 @@ function mastermind(who)
         if(Res[0] == 999)
             if(stands[1] && stands[2] && stands[3] && stands[4] && stands[5])
                 counter := counter - 1;
-                
+
                 // Calcular o resultado da tentativa atual
                 var result := GetAttemptResult(stands);
-                
+
+                if (is_esp)
+                    TrancaDebug("Tentativa #" + (10 - counter) + ": " + stands + " | hits=" + result.hits + " colors=" + result.colors);
+                endif
+
                 // Mostrar feedback para tentativa atual
                 sleep(1);
                 SendSysMessageEx(who, result.desc_hits, SSM_INFO);
                 SendSysMessageEx(who, result.desc_colors, SSM_INFO);
                 sleep(1);
-                
+
                 // Armazenar tentativa e resultado juntos
                 StorePreviousAttempt(stands, result);
                 

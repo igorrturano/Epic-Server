@@ -30,6 +30,7 @@ include ":expbar:expbar";
 include ":epicAI:epicai";
 include ":tn:cooldown";
 include ":hotbar:include/custombuff";
+// include ":bounty:include/bountyCore";  // WIP: pacote bounty/ ainda nao commitado
 // include ":entropy:entropy";
 
 program core_npcDeath(params)
@@ -97,21 +98,42 @@ program core_npcDeath(params)
 		var lastDamage := GetObjProperty(corpse, "LastDamage");
 		var region := GetRegionName(corpse);
 		var char_name := lastDamage.serial;
-		var tipo := "morreu";
-		var fin, nome;
+		var fin;
 		if (char_name && !char_name.errortext)
 			fin := SystemFindObjectBySerial(char_name, SYSFIND_SEARCH_OFFLINE_MOBILES);
-			if (fin)
-				nome := GetObjProperty(fin, "nome_inicial");
-			endif
 		endif
 		var coords := { corpse.x, corpse.y, corpse.z, CStr(corpse.realm) };
 		var trueBoss := GetObjProperty(corpse, "true_boss");
-		if (fin && nome)
+
+		var owner_serial := getObjProperty(corpse, "owner");
+		var owner_mobile := SystemFindObjectBySerial(owner_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+		var owner_nome;
+		if (owner_mobile)
+			owner_nome := GetObjProperty(owner_mobile, "nome_inicial");
+		endif
+
+		if (owner_nome)
 			var pet_name := corpse.desc;
 			pet_name["A corpse of "] := "";
-			Start_script(":DiscordWebhook:discord", { tipo, nome, fin.acctname, pet_name,
-										  			region, coords, 0 });
+			pet_name["corpo de "] := "";
+
+			var killer_nome := "desconhecido";
+			if (fin)
+				var killer_nome_inicial := GetObjProperty(fin, "nome_inicial");
+				if (killer_nome_inicial)
+					killer_nome := killer_nome_inicial;
+				elseif (fin.corpsetype)
+					var desc := fin.desc;
+					desc["A corpse of "] := "";
+					desc["corpo de "] := "";
+					killer_nome := desc;
+				elseif (fin.name && !fin.name.errortext)
+					killer_nome := fin.name;
+				endif
+			endif
+
+			Start_script(":DiscordWebhook:discord", { "petmorreu", owner_nome, owner_mobile.acctname, killer_nome,
+										  			region, coords, pet_name });
 		endif
 
 		var masterserial := getObjProperty(corpse, "owner");
@@ -122,8 +144,8 @@ program core_npcDeath(params)
 			endif
 
 			var summon := GetObjProperty(corpse, "summoned");
-			if (summon == 1) // se for summon de druid para retirar da barra de buff e liberar o slot			
-			var masterseriali := getObjProperty(corpse, "owneri");
+			if (summon == 1) // se for summon de druid para retirar da barra de buff e liberar o slot
+				var masterseriali := getObjProperty(corpse, "owneri");
 				if (masterseriali && !masterseriali.errortext)
 					var masteri := SystemFindObjectBySerial(masterseriali);
 					if (masteri)
@@ -132,9 +154,7 @@ program core_npcDeath(params)
 						TS_LowerDuration(masteri, timer, -1);
 					endif
 				endif
-			elseif (!getobjproperty(corpse, "Necro"))			
-			var originalSerial := GetObjProperty(corpse, "Original_serial");
-				Erasepet(master, originalSerial);
+			elseif (!getobjproperty(corpse, "Necro"))
 				GetNumPets(master);
 				var teste := GetObjProperty(corpse, "LastDP");
 				SetObjProperty(master, "LastPetCorpse", corpse.serial);
@@ -148,8 +168,8 @@ program core_npcDeath(params)
 				// SendSysMessageEx(master, "Seu pet fiel precisa ser reanimado!", SSM_FAIL);
 				// endif
 				endif
-			else			
-			var numbersummons := Cint(GetObjProperty(master, "NecroSummons"));
+			else
+				var numbersummons := Cint(GetObjProperty(master, "NecroSummons"));
 				SetObjProperty(master, "NecroSummons", (numbersummons - 1));
 			endif
 		endif // Close the masterserial check				
@@ -285,6 +305,25 @@ program core_npcDeath(params)
 	SetName(corpse, corpse_name);
 
 	var template := GetObjProperty(corpse, "npctemplate"); // Set by the core.
+
+	// === Bounty Hook: Marca de Contrato sobre cadáver de alvo do pool ===
+	// WIP: pacote bounty/ ainda nao commitado — bloco desativado para destravar build.
+	// Rodar aqui (antes do NoCorpseCheck) garante que a prova fica no corpse
+	// caso ele seja preservado, e desaparece junto se o corpse for destruído.
+	// BC_ResolveActualKiller aplica as regras de atribuição: pet→dono,
+	// last-hit, sem split de party, sem most-damage (vide bountyCore.inc).
+	// if (template)
+	// 	var bounty_killer := 0;
+	// 	var bounty_lastdamage := GetObjProperty(corpse, "LastDamage");
+	// 	if (bounty_lastdamage && !bounty_lastdamage.errortext)
+	// 		var ks := bounty_lastdamage.serial;
+	// 		if (ks && !ks.errortext)
+	// 			bounty_killer := SystemFindObjectBySerial(ks, SYSFIND_SEARCH_OFFLINE_MOBILES);
+	// 		endif
+	// 	endif
+	// 	BC_DropProofOnCorpse(corpse, BC_ResolveActualKiller(bounty_killer));
+	// endif
+
 	var npc_cfg := NPC_GetNPCConfig(template);
 	var death_script;
 

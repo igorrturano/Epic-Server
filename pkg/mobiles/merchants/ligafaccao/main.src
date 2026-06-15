@@ -1,0 +1,432 @@
+use uo;
+use os;
+use npc;
+use util;
+use guilds;
+use datafile;
+
+include "include/sysEvent";
+include "include/events";
+include ":faccao:faccao";
+include ":tn:cooldown";
+include ":architect:include/architect";
+include ":gumps:/include/gumps";
+include ":gumps:/include/gumps_ex";
+include ":tn:equipment";
+
+var me         := self();
+var guild      := 0;
+var following  := 0;
+var fix_location := 0;
+
+
+
+// ============================================================
+// PERMISSOES
+// ============================================================
+
+function HasPermission(who)
+    if (!guild)
+        var gid := GetObjProperty(me, "guild");
+        if (gid) guild := FindGuild(gid); endif
+    endif
+    if (!guild)  return who.cmdlevel >= 3; endif
+    if (who.cmdlevel >= 3) return 1; endif
+
+    var leader_serial  := guild.GetProp("leader");
+    var is_leader      := (who.serial == leader_serial);
+    var user_subguilds := who.guild ? who.guild.getProp("subguilds") : array{};
+    if (!user_subguilds) user_subguilds := array{}; endif
+    var in_subguild    := (guild.guildid in user_subguilds);
+    var privs          := guild.GetProp(cstr(who.serial));
+    var above_guards   := (privs && privs.above_guards);
+
+    return (is_leader || in_subguild || above_guards);
+endfunction
+
+// ============================================================
+// MOVIMENTO
+// ============================================================
+
+function PetGoTo(dest, run := 1)
+    var flags := FP_IGNORE_MOBILES;
+    var path  := FindPath(me.x, me.y, me.z, dest.x, dest.y, dest.z, me.realm, flags, 12);
+    var delay := 275 - me.run_speed;
+    foreach coord in path
+        if (run)
+            RunTowardLocation(coord.x, coord.y);
+        else
+            WalkTowardLocation(coord.x, coord.y);
+        endif
+        sleepms(delay);
+    endforeach
+endfunction
+
+// ============================================================
+// FALA / COMANDOS
+// ============================================================
+
+function ResolveSpeech(ev)
+    var text     := lower(ev.text);
+    var my_name  := lower(me.name);
+    var has_name := text[my_name];
+    var has_all  := text["todos"];
+
+    if (!has_name && !has_all)  return; endif
+    if (!HasPermission(ev.source)) return; endif
+
+    if (text["seguir"])
+        following    := ev.source;
+        fix_location := 0;
+        EraseObjProperty(me, "fix_loc");
+        PrintTextAbove(me, "Sim senhor, vou acompanha-lo.");
+
+    elseif (text["ir"] && text["at"])
+        var where := TargetCoordinates(ev.source);
+        if (!where) return SendSysMessage(ev.source, "Cancelado."); endif
+        if (guild && !IsNPCInWalkRect(where))
+            PrintTextAbove(me, "Nao posso ir alem do territorio da faccao!");
+            return;
+        endif
+        following    := 0;
+        fix_location := 0;
+        PrintTextAbove(me, "Sim senhor.");
+        PetGoTo(where, 1);
+        fix_location := where;
+        SetObjProperty(me, "fix_loc", fix_location);
+
+    elseif (text["parar"] || (text["mant"] && text["posicao"]))
+        following    := 0;
+        fix_location := struct{
+            "x" := me.x, "y" := me.y, "z" := me.z,
+            "facing" := ev.source.facing
+        };
+        SetObjProperty(me, "fix_loc", fix_location);
+        me.facing := fix_location.facing;
+        PrintTextAbove(me, "Ficarei aqui.");
+    endif
+endfunction
+
+// ============================================================
+// DESPACHO DE SERVICO
+// ============================================================
+
+function GetServiceScript()
+    var t := lower(cstr(me.npctemplate));
+    if (t["curandeiro"] != error)     return ":ligafaccao:curandeiro";       endif
+    if (t["gemvendor"] != error)      return ":ligafaccao:gemvendor";        endif
+    if (t["talker"] != error)         return ":ligafaccao:talker";           endif
+    if (t["rumor"] != error)          return ":ligafaccao:rumor";            endif
+    if (t["bibliotecario"] != error)  return ":ligafaccao:bibliotecario";    endif
+    if (t["stablemaster"] != error)   return ":ligafaccao:stablemasterfaccao"; endif
+    if (t["mercadonegro"] != error)   return ":ligafaccao:mercadonegro";     endif
+    if (t["ferreiro"] != error)       return ":ligafaccao:ferreirofaccao";   endif
+    if (t["bardo"] != error)          return ":ligafaccao:bardo";            endif
+    return ":ligafaccao:curandeiro"; // fallback
+endfunction
+
+// ============================================================
+// GUMP DE GESTAO (lider/oficiais)
+// ============================================================
+
+function ShowManagementFacingGump(who)
+    var gump := GFCreateGump(220, 70);
+    GFResizePic(gump, 0, 0, 0x254E, 125, 100);
+
+    GFTextLine(gump, 30, 15, 2100, "Norte");
+    GFAddButton(gump, 15, 17, 2117, 2118, 1, 100);
+
+    GFTextLine(gump, 30, 35, 2100, "Sul");
+    GFAddButton(gump, 15, 37, 2117, 2118, 1, 110);
+
+    GFTextLine(gump, 30, 55, 2100, "Leste");
+    GFAddButton(gump, 15, 57, 2117, 2118, 1, 120);
+
+    GFTextLine(gump, 30, 75, 2100, "Oeste");
+    GFAddButton(gump, 15, 77, 2117, 2118, 1, 130);
+
+    var dir_input := GFSendGump(who, gump)[0];
+    var new_facing := -1;
+    case (dir_input)
+        100: new_facing := 0; break;
+        110: new_facing := 4; break;
+        120: new_facing := 2; break;
+        130: new_facing := 6; break;
+    endcase
+
+    if (new_facing >= 0)
+        me.facing := new_facing;
+        if (fix_location)
+            fix_location.facing := new_facing;
+            SetObjProperty(me, "fix_loc", fix_location);
+        endif
+    endif
+endfunction
+
+function ProcessManagementGump(player)
+    var gump := GFCreateGump(220, 70);
+    GFResizePic(gump, 0, 0, 0x254E, 160, 180);
+
+    GFTextLine(gump, 30, 15, 2100, "Atender");
+    GFTooltipText(gump, "Abre o servico deste NPC (compra, cura, etc).");
+    GFAddButton(gump, 15, 17, 2117, 2118, 1, 1);
+
+    GFTextLine(gump, 30, 35, 2100, "Seguir");
+    GFTooltipText(gump, "Ordena o NPC a seguir um alvo.");
+    GFAddButton(gump, 15, 37, 2117, 2118, 1, 2);
+
+    GFTextLine(gump, 30, 55, 2100, "Ir");
+    GFTooltipText(gump, "Ordena o NPC a ir ate um local.");
+    GFAddButton(gump, 15, 57, 2117, 2118, 1, 3);
+
+    GFTextLine(gump, 30, 75, 2100, "Parar");
+    GFTooltipText(gump, "Ordena o NPC a parar onde esta.");
+    GFAddButton(gump, 15, 77, 2117, 2118, 1, 4);
+
+    GFTextLine(gump, 30, 95, 2100, "Facing");
+    GFTooltipText(gump, "Define a direcao para onde o NPC ficara olhando.");
+    GFAddButton(gump, 15, 97, 2117, 2118, 1, 5);
+
+    GFTextLine(gump, 30, 115, 2100, "Equipar");
+    GFTooltipText(gump, "Equipa um item no NPC.");
+    GFAddButton(gump, 15, 117, 2117, 2118, 1, 6);
+
+    GFTextLine(gump, 30, 135, 2100, "Despir");
+    GFTooltipText(gump, "Remove todos os itens do NPC e coloca na sua mochila.");
+    GFAddButton(gump, 15, 137, 2117, 2118, 1, 7);
+
+    var input := GFSendGump(player, gump)[0];
+
+    if (input == 1)
+        var svc := GetServiceScript();
+        start_script(svc, array{ me, player });
+    elseif (input == 2)
+        SendSysMessage(player, "Quem o NPC deve seguir?");
+        var targ := Target(player);
+        if (!targ || !targ.isA(POLCLASS_MOBILE))
+            return SendSysMessage(player, "Cancelado.");
+        endif
+        following    := targ;
+        fix_location := 0;
+        EraseObjProperty(me, "fix_loc");
+        PrintTextAbove(me, "Sim senhor, vou acompanha-lo.");
+    elseif (input == 3)
+        SendSysMessage(player, "Para onde o NPC deve ir?");
+        var where := TargetCoordinates(player);
+        if (!where)
+            return SendSysMessage(player, "Cancelado.");
+        endif
+        if (guild && !IsNPCInWalkRect(where))
+            PrintTextAbove(me, "Nao posso ir alem do territorio da faccao!");
+            return;
+        endif
+        following    := 0;
+        fix_location := 0;
+        PrintTextAbove(me, "Sim senhor.");
+        PetGoTo(where, 1);
+        fix_location := where;
+        SetObjProperty(me, "fix_loc", fix_location);
+    elseif (input == 4)
+        following    := 0;
+        fix_location := struct{
+            "x" := me.x, "y" := me.y, "z" := me.z,
+            "facing" := me.facing
+        };
+        SetObjProperty(me, "fix_loc", fix_location);
+        PrintTextAbove(me, "Ficarei aqui.");
+    elseif (input == 5)
+        ShowManagementFacingGump(player);
+    elseif (input == 6)
+        SendSysMessage(player, "O que deve ser equipado?");
+        var what := Target(player);
+        if (!what)
+            return SendSysMessage(player, "Cancelado.");
+        endif
+        var res := EquipItem(me, what);
+        if (res)
+            PrintTextAbove(me, "Equipado.");
+        else
+            SendSysMessage(player, "Nao foi possivel equipar: " + res.errortext);
+        endif
+    elseif (input == 7)
+        var container := CreateItemAtLocation(me.x, me.y, me.z, "backpack", 1, me.realm);
+        foreach item in (EnumeratePhysicalItems(me))
+            MoveItemToContainer(item, container);
+            SleepMS(2);
+        endforeach
+        PrintTextAbove(me, "Como desejar.");
+    endif
+endfunction
+
+// ============================================================
+// INICIALIZACAO
+// ============================================================
+
+function Setup()
+    var guild_id := GetObjProperty(me, "guild");
+    if (guild_id)
+        guild := FindGuild(guild_id);
+    endif
+
+    fix_location := GetObjProperty(me, "fix_loc");
+    if (fix_location == error) fix_location := 0; endif
+
+    // Init de equipamento idempotente — chama uma unica vez por NPC.
+    if (!GetObjProperty(me, "#equip_done"))
+        start_script(":ligafaccao:/include/init", array{ me });
+        SetObjProperty(me, "#equip_done", 1);
+    endif
+endfunction
+
+// ============================================================
+// LOOP PRINCIPAL
+// ============================================================
+
+program LigaMain()
+    EnableEvents(SYSEVENT_SPEECH, 10);
+    EnableEvents(SYSEVENT_DOUBLECLICKED, 5);
+    EnableEvents(SYSEVENT_ITEM_GIVEN, 2);
+
+    Setup();
+    sleep(1);
+
+    var wait_time := 10;
+
+    while (me)
+
+        // Re-leitura do guild caso nao tenha sido definido no Setup
+        if (!guild)
+            var _gid := GetObjProperty(me, "guild");
+            if (_gid) guild := FindGuild(_gid); endif
+        endif
+
+        // Controle de territorio
+        if (guild)
+            if (GetObjProperty(me, "tipo_faccao") == "staff")
+                if (HandleWalkRectBreach(me, wait_time))
+                    if (following) following := 0; PrintTextAbove(me, "Nao posso ir alem do meu territorio!"); endif
+                endif
+            elseif (!inGuildRect(guild, me, 4))
+                var _target_inside := following ? inGuildRect(guild, following, 0) : 0;
+                if (!_target_inside && following)
+                    following := 0;
+                    PrintTextAbove(me, "Nao posso ir alem do territorio!");
+                endif
+                if (!fix_location && !_target_inside)
+                    var _center := GetGuildCenter(guild);
+                    if (_center)
+                        RunTowardLocation(_center.x, _center.y);
+                        wait_time := 0;
+                    endif
+                endif
+            endif
+        endif
+
+        // Seguir
+        if (following)
+            if (!following.isA(POLCLASS_MOBILE) || following.dead)
+                following := 0;
+            else
+                var dist := Distance(me, following);
+                if (dist > 25)
+                    following := 0;
+                    wait_time := 5;
+                elseif (dist > 2)
+                    if (dist > 4) RunTowardLocation(following.x, following.y);
+                    else          WalkTowardLocation(following.x, following.y);
+                    endif
+                    wait_time := 0;
+                else
+                    wait_time := 1;
+                endif
+            endif
+        endif
+
+        // Retornar ao posto
+        if (!following && fix_location)
+            var dist_posto := CoordinateDistance(me.x, me.y, fix_location.x, fix_location.y);
+            if (dist_posto > 1)
+                WalkTowardLocation(fix_location.x, fix_location.y);
+                wait_time := 0;
+            else
+                me.facing := fix_location.facing;
+            endif
+        endif
+
+        // Vaguear pelo territorio quando ocioso
+        if (!following && !fix_location && guild && !GetCooldown(me, "wander_cd"))
+            var _is_staff := (GetObjProperty(me, "tipo_faccao") == "staff");
+            var _in_bounds := _is_staff ? IsNPCInWalkRect(me) : inGuildRect(guild, me, 0);
+            if (_in_bounds)
+                var _wp := GetRandomWanderPoint();
+                WalkTowardLocation(_wp.x, _wp.y);
+                SetCooldown(me, "wander_cd", RandomInt(8) + 4);
+                wait_time := 0;
+            endif
+        endif
+
+        var ev := Wait_For_Event(wait_time);
+        wait_time := 10;
+
+        case (ev.type)
+            SYSEVENT_SPEECH:
+                ResolveSpeech(ev);
+
+            SYSEVENT_DOUBLECLICKED:
+                if (!GetObjProperty(me, "#occupied"))
+                    if (HasPermission(ev.source))
+                        ProcessManagementGump(ev.source);
+                    else
+                        var svc := GetServiceScript();
+                        start_script(svc, array{ me, ev.source });
+                    endif
+                endif
+
+            SYSEVENT_ITEM_GIVEN:
+                if (!GetObjProperty(me, "#occupied"))
+                    var svc2 := GetServiceScript();
+                    start_script(svc2, array{ me, ev.source, ev.item });
+                endif
+
+            MERCH_FOLLOW_CMD:
+                following    := ev.targ;
+                fix_location := 0;
+                EraseObjProperty(me, "fix_loc");
+                PrintTextAbove(me, "Sim senhor, vou acompanha-lo.");
+                break;
+
+            MERCH_GO_CMD:
+                if (guild && !IsNPCInWalkRect(ev.dest))
+                    PrintTextAbove(me, "Nao posso ir alem do territorio da faccao!");
+                    break;
+                endif
+                following    := 0;
+                fix_location := 0;
+                PrintTextAbove(me, "Sim senhor.");
+                PetGoTo(ev.dest, 1);
+                fix_location := ev.dest;
+                SetObjProperty(me, "fix_loc", fix_location);
+                break;
+
+            MERCH_STOP_CMD:
+                following    := 0;
+                fix_location := struct{
+                    "x" := me.x, "y" := me.y, "z" := me.z,
+                    "facing" := me.facing
+                };
+                SetObjProperty(me, "fix_loc", fix_location);
+                PrintTextAbove(me, "Ficarei aqui.");
+                break;
+
+            MERCH_FACING_CMD:
+                me.facing := ev.facing;
+                if (fix_location)
+                    fix_location.facing := ev.facing;
+                    SetObjProperty(me, "fix_loc", fix_location);
+                endif
+                break;
+
+        endcase
+
+    endwhile
+endprogram

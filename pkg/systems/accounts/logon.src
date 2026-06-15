@@ -29,6 +29,9 @@ program Logon(who)
 
 	// ── Faccao: notificacoes e restauracoes de prisao ────────────────────────
 	start_script(":faccao:logon_hook", array{who});
+
+	// ── Vendedores: itens devolvidos após 7 dias parados ─────────────────────
+	start_script(":uose:logon_hook", array{who});
 	// SendSysMessage(who, "Login");
 	// NormaliseGamePlayer(who);
 

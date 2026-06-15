@@ -290,7 +290,8 @@ endfunction
 
 function UpdateDiseaseProperty(mobile, property_name, new_value)
     var diseases_system := GetObjProperty(mobile, "Diseases_System");
-    if (!diseases_system)
+    // error e structs vazios sao truthy em eScript — checar explicitamente
+    if (diseases_system == error || TypeOf(diseases_system) != "Struct")
         diseases_system := struct{};
     endif
     diseases_system[property_name] := new_value;

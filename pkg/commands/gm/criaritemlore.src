@@ -1,0 +1,380 @@
+// 3
+use uo;
+use os;
+use util;
+use basic;
+
+include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/Button";
+include ":gumpDesigner:Control/Text";
+include ":gumpDesigner:Control/TextBox";
+include ":gumpDesigner:Control/ImageGump";
+
+const LORE_USESCRIPT := ":custompizza:itemrp/use_rpitem";
+
+// Dimensões da área de flavor no gump de lore (use_rpitem.src::ShowLoreItemInfo).
+// Imagem hospedada (URL) é renderizada via <img> dentro de HTMLArea neste tamanho.
+const FLAVOR_IMG_WIDTH := 330;
+const FLAVOR_IMG_HEIGHT := 485;
+
+// Profissões com sons/emotes temáticos em EvaluateItem.
+// Manter sincronizado com use_rpitem.src::EvaluateItem.
+function ValidProfessions()
+    return array{
+        "Metal_Working", "Wood_Working", "Domestic_Work", "Gathering", "Handle_Animal",
+        "Alchemy", "Magery", "Mechanics", "Medicine", "Survival",
+        "Science", "Theology", "Beastmastery", "Tailoring", "Provisioning",
+        "Mining", "Lumberjacking", "Taming", "Nature"
+    };
+endfunction
+
+// Culturas canônicas extraídas de lore_items.cfg. Mantém grafia oficial
+// (com acentos) — typos como "Bjorske" devem ser corrigidos no catálogo.
+function ValidCultures()
+    return array{
+        "Aigla", "Aiglano", "Aluriel", "Badûran", "Björske",
+        "Civilização Desconhecida", "Gulthrak", "Har'oloth", "Kaijing", "Pequilho"
+    };
+endfunction
+
+program criar_item_lore(who)
+    if (!who.cmdlevel)
+        SendSysMessage(who, "Esse comando é apenas para GMs.");
+        return 0;
+    endif
+
+    SendSysMessage(who, "Selecione o item que receberá o lore.");
+    var alvo := Target(who, TGTOPT_CHECK_LOS);
+    if (!alvo)
+        SendSysMessage(who, "Cancelado.");
+        return 0;
+    endif
+
+    if (!alvo.IsA(POLCLASS_ITEM))
+        SendSysMessage(who, "Você só pode aplicar lore em itens.");
+        return 0;
+    endif
+
+    if (alvo.IsA(POLCLASS_CONTAINER))
+        SendSysMessage(who, "Containers não podem receber lore (a UI conflita com a abertura do bag).");
+        return 0;
+    endif
+
+    var existing := GetObjProperty(alvo, "lore_data");
+    var data := struct;
+    if (existing && existing != error)
+        data.+name := existing.name;
+        data.+culture_name := existing.culture_name;
+        data.+image := existing.image;
+        data.+flavor_url := existing.flavor_url;
+        data.+required_skill := existing.required_skill;
+        data.+required_skill_value := existing.required_skill_value;
+        data.+main_text := existing.main_text;
+        data.+skill_text := existing.skill_text;
+        data.+archaeology_text := existing.archaeology_text;
+        SendSysMessage(who, "Editando lore existente neste item.");
+    else
+        data.+name := alvo.desc;
+        data.+culture_name := "";
+        data.+image := Hex(alvo.objtype);
+        data.+flavor_url := "";
+        data.+required_skill := "Magery";
+        data.+required_skill_value := "50.0";
+        data.+main_text := "";
+        data.+skill_text := "";
+        data.+archaeology_text := "";
+    endif
+
+    var err_msg := "";
+    while (1)
+        var result := ShowLoreEditorGump(who, data, err_msg);
+
+        if (result.action == "cancel")
+            SendSysMessage(who, "Cancelado.");
+            return 0;
+        endif
+
+        // Sempre preserva o que o GM já digitou antes de abrir um picker.
+        data := result.data;
+
+        if (result.action == "pick_culture")
+            var picked := ShowPicker(who, "Escolha a Cultura / Povo", ValidCultures());
+            if (picked != "")
+                data.culture_name := picked;
+            endif
+            err_msg := "";
+            continue;
+        endif
+
+        if (result.action == "pick_profession")
+            var picked := ShowPicker(who, "Escolha a Profissão", ValidProfessions());
+            if (picked != "")
+                data.required_skill := picked;
+            endif
+            err_msg := "";
+            continue;
+        endif
+
+        // action == "ok" → valida e aplica
+        var validation := ValidateLoreData(data);
+        if (validation.ok)
+            ApplyLoreData(alvo, validation.data);
+            SendSysMessage(who, "Item de lore configurado com sucesso.");
+            return 1;
+        endif
+
+        err_msg := validation.errmsg;
+    endwhile
+endprogram
+
+function ShowLoreEditorGump(who, data, err_msg)
+    var gump := Gump(who, "Criar Item de Lore", 540, 740);
+
+    var x_label := 25;
+    var x_input := 25;
+    var input_w := 470;
+    var y := 50;
+
+    if (err_msg != "")
+        gump.AddControl(Text("err", x_label, y, "Erro: " + err_msg, TEXT_COLOR::COLOR_RED));
+        y += 22;
+    endif
+
+    gump.AddControl(Text("lNome", x_label, y, "Nome do Item:", 53));
+    y += 18;
+    var tbNome := TextBox("tbNome", x_input, y + 6, input_w, 1, 2100, data.name, 60);
+    gump.AddControl(tbNome);
+    y += 30;
+
+    gump.AddControl(Text("lCultura", x_label, y, "Cultura / Povo:", 53));
+    y += 18;
+    var tbCultura := TextBox("tbCultura", x_input, y + 6, input_w - 40, 1, 2100, data.culture_name, 40);
+    gump.AddControl(tbCultura);
+    var btnPickCult := Button("btnPickCult", x_input + input_w - 30, y + 2,
+        BUTTON_IMAGE::MODERN_EDIT_UNPRESSED, BUTTON_IMAGE::MODERN_EDIT_PRESSED);
+    gump.AddControl(btnPickCult);
+    y += 30;
+
+    gump.AddControl(Text("lImg", x_label, y, "Imagem pequena (hex do item, ex: 0xF8E4):", 53));
+    y += 18;
+    var tbImg := TextBox("tbImg", x_input, y + 6, input_w, 1, 2100, data.image, 12);
+    gump.AddControl(tbImg);
+    y += 30;
+
+    gump.AddControl(Text("lUrl", x_label, y, "Imagem grande (URL — recomendado " + CStr(FLAVOR_IMG_WIDTH) + "x" + CStr(FLAVOR_IMG_HEIGHT) + "):", 53));
+    y += 18;
+    var tbUrl := TextBox("tbUrl", x_input, y + 6, input_w, 1, 2100, data.flavor_url, 300);
+    gump.AddControl(tbUrl);
+    y += 30;
+
+    gump.AddControl(Text("lProf", x_label, y, "Profissão para avaliar:", 53));
+    y += 18;
+    var tbProf := TextBox("tbProf", x_input, y + 6, 220, 1, 2100, data.required_skill, 30);
+    gump.AddControl(tbProf);
+    var btnPickProf := Button("btnPickProf", x_input + 230, y + 2,
+        BUTTON_IMAGE::MODERN_EDIT_UNPRESSED, BUTTON_IMAGE::MODERN_EDIT_PRESSED);
+    gump.AddControl(btnPickProf);
+    gump.AddControl(Text("lProfHint", x_input + 265, y + 4, "(clique para escolher da lista)", 2100));
+    y += 30;
+
+    gump.AddControl(Text("lDif", x_label, y, "Dificuldade (0.0 - 120.0):", 53));
+    y += 18;
+    var tbDif := TextBox("tbDif", x_input, y + 6, 100, 1, 2100, CStr(data.required_skill_value), 8);
+    gump.AddControl(tbDif);
+    y += 30;
+
+    gump.AddControl(Text("lMain", x_label, y, "Texto principal (lore aberto):", 53));
+    y += 18;
+    var tbMain := TextBox("tbMain", x_input, y + 6, input_w, 7, 2100, data.main_text, 1500);
+    gump.AddControl(tbMain);
+    y += 7 * 18 + 12;
+
+    gump.AddControl(Text("lSkill", x_label, y, "Texto da profissão (revelado ao avaliar):", 53));
+    y += 18;
+    var tbSkill := TextBox("tbSkill", x_input, y + 6, input_w, 3, 2100, data.skill_text, 800);
+    gump.AddControl(tbSkill);
+    y += 3 * 18 + 12;
+
+    gump.AddControl(Text("lArch", x_label, y, "Texto de arqueologia (revelado ao arqueólogo):", 53));
+    y += 18;
+    var tbArch := TextBox("tbArch", x_input, y + 6, input_w, 3, 2100, data.archaeology_text, 800);
+    gump.AddControl(tbArch);
+    y += 3 * 18 + 16;
+
+    var btnOk := Button("btnOk", x_label, y, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnOk);
+    gump.AddControl(Text("lOk", x_label + 35, y + 4, "Salvar", TEXT_COLOR::COLOR_GREEN));
+
+    var btnCanc := Button("btnCanc", x_label + 140, y, BUTTON_IMAGE::MODERN_X_UNPRESSED, BUTTON_IMAGE::MODERN_X_PRESSED);
+    gump.AddControl(btnCanc);
+    gump.AddControl(Text("lCanc", x_label + 175, y + 4, "Cancelar", TEXT_COLOR::COLOR_RED));
+
+    var ev := gump.Show();
+
+    // Captura o estado atual de TODOS os campos antes de descobrir a ação —
+    // assim pickers preservam o que o GM já digitou.
+    var current := struct{
+        "name"                  := CStr(tbNome.GetValue()),
+        "culture_name"          := CStr(tbCultura.GetValue()),
+        "image"                 := CStr(tbImg.GetValue()),
+        "flavor_url"            := CStr(tbUrl.GetValue()),
+        "required_skill"        := CStr(tbProf.GetValue()),
+        "required_skill_value"  := CStr(tbDif.GetValue()),
+        "main_text"             := CStr(tbMain.GetValue()),
+        "skill_text"            := CStr(tbSkill.GetValue()),
+        "archaeology_text"      := CStr(tbArch.GetValue())
+    };
+
+    var action := "cancel";
+    var ctrl := ev.GetControl();
+    if (ctrl != EVENT_ACTION::CLOSED)
+        if (ctrl.Equals(btnOk))
+            action := "ok";
+        elseif (ctrl.Equals(btnPickCult))
+            action := "pick_culture";
+        elseif (ctrl.Equals(btnPickProf))
+            action := "pick_profession";
+        endif
+    endif
+
+    gump.Dispose();
+    return struct{ "action" := action, "data" := current };
+endfunction
+
+function ShowPicker(who, title, options)
+    var n := options.size();
+    var per_col := 10;
+    var cols := CInt((n + per_col - 1) / per_col);
+    var width := 60 + (cols * 220);
+    var height := 90 + per_col * 32;
+
+    var gump := Gump(who, title, width, height);
+
+    var btns := array{};
+    var i := 1;
+    foreach opt in options
+        var col := CInt((i - 1) / per_col);
+        var row := (i - 1) % per_col;
+        var x := 25 + col * 220;
+        var y := 50 + row * 32;
+
+        var btn := Button("opt" + CStr(i), x, y,
+            BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+        gump.AddControl(btn);
+        gump.AddControl(Text("lbl" + CStr(i), x + 35, y + 4, opt, 53));
+        btns.append(btn);
+        i += 1;
+    endforeach
+
+    var ev := gump.Show();
+    var picked := "";
+    var ctrl := ev.GetControl();
+    if (ctrl != EVENT_ACTION::CLOSED)
+        var k := 1;
+        foreach b in btns
+            if (ctrl.Equals(b))
+                picked := options[k];
+                break;
+            endif
+            k += 1;
+        endforeach
+    endif
+
+    gump.Dispose();
+    return picked;
+endfunction
+
+function FormatProfListInline()
+    var s := "";
+    var i := 0;
+    foreach p in ValidProfessions()
+        if (i > 0)
+            s += ", ";
+        endif
+        s += p;
+        i += 1;
+    endforeach
+    return s;
+endfunction
+
+function ValidateLoreData(raw)
+    var res := struct{ "ok" := 0, "errmsg" := "", "data" := 0 };
+
+    if (Trim(raw.name, TRIM_BOTH) == "")
+        res.errmsg := "Nome do item não pode ser vazio.";
+        return res;
+    endif
+
+    if (Trim(raw.culture_name, TRIM_BOTH) == "")
+        res.errmsg := "Cultura não pode ser vazia.";
+        return res;
+    endif
+
+    var img_str := Trim(raw.image, TRIM_BOTH);
+    if (img_str == "")
+        res.errmsg := "Imagem (hex) é obrigatória.";
+        return res;
+    endif
+    var img := CInt(img_str);
+    if (!img)
+        res.errmsg := "Imagem hex inválida (ex: 0xF8E4).";
+        return res;
+    endif
+
+    var prof := Trim(raw.required_skill, TRIM_BOTH);
+    if (!(prof in ValidProfessions()))
+        res.errmsg := "Profissão inválida. Use uma de: " + FormatProfListInline();
+        return res;
+    endif
+
+    var dif := CDbl(raw.required_skill_value);
+    if (dif < 0.0 || dif > 120.0)
+        res.errmsg := "Dificuldade deve estar entre 0 e 120.";
+        return res;
+    endif
+
+    if (Trim(raw.main_text, TRIM_BOTH) == "")
+        res.errmsg := "Texto principal não pode ser vazio.";
+        return res;
+    endif
+
+    if (Trim(raw.skill_text, TRIM_BOTH) == "")
+        res.errmsg := "Texto da profissão não pode ser vazio.";
+        return res;
+    endif
+
+    if (Trim(raw.archaeology_text, TRIM_BOTH) == "")
+        res.errmsg := "Texto de arqueologia não pode ser vazio.";
+        return res;
+    endif
+
+    res.data := struct{
+        "name"                  := raw.name,
+        "culture_name"          := raw.culture_name,
+        "image"                 := img,
+        "flavor_url"            := Trim(raw.flavor_url, TRIM_BOTH),
+        "required_skill"        := prof,
+        "required_skill_value"  := dif,
+        "main_text"             := raw.main_text,
+        "skill_text"            := raw.skill_text,
+        "archaeology_text"      := raw.archaeology_text
+    };
+    res.ok := 1;
+    return res;
+endfunction
+
+function ApplyLoreData(item, data)
+    SetObjProperty(item, "lore_data", data);
+    SetObjProperty(item, "IsLoreItem", 1);
+    SetObjProperty(item, "itemunico", 1);
+
+    // Marca o item para abrir o gump de lore no double-click.
+    item.usescript := LORE_USESCRIPT;
+    item.name := data.name;
+    item.decayAt := 0;
+
+    // Avaliações prévias precisam ser reset quando o lore muda — senão o
+    // jogador vê texto antigo bloqueando a info nova.
+    EraseObjProperty(item, "evaluated_skill");
+    EraseObjProperty(item, "evaluated_archaeology");
+endfunction
