@@ -83,7 +83,10 @@ program canInsert(mobile, container, movetype, inserttype, item, existing_stack,
 			   	0xec29,        // grimório
 			   	
 			   	0xE9C1,        // livro de pesquisa
-			   	
+
+			   	0xFD3A,
+			   	0xFD3B,        // folhas de receita (doméstica, madeira)
+
 			   	0x6161,
 			   	0x6157,
 			   	0x6158,
