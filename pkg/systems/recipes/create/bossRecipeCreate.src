@@ -1,0 +1,12 @@
+// Create script genérico para pergaminhos de receita boss-drop.
+// Cada Item em itemdesc.cfg define CProp RecipeKey <key> — esse script
+// copia o valor pra prop "recipe" usada por recipeClick.src.
+use uo;
+use util;
+
+program create(item)
+    var key := GetObjProperty(item, "RecipeKey");
+    if (key && key != error)
+        SetObjProperty(item, "recipe", key);
+    endif
+endprogram
