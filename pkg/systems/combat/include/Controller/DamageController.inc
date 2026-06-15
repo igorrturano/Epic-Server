@@ -33,15 +33,15 @@ include ":fls_core:fls_characters";
  * on a lethal hit, an Autopsy ObjProp containing weapon/stats/resists/skills
  * snapshot for forensicEvaluation. Migrated from DamageController_legacy.
  */
-function SetLastDamageInfo(mobile, amount, type, source, spell := "")
+function SetLastDamageInfo(mobile, amount, type, source, spell := 0)
 	var last_damage := struct;
 	last_damage.+serial	:= source.serial;
 	last_damage.+time	:= polcore().systime;
 	last_damage.+amount	:= amount;
 	last_damage.+type	:= type;
 
-	if (spell)
-		last_damage.+spell := spell;
+	if (CInt(spell) > 0)
+		last_damage.+spell := CInt(spell);
 	endif
 
 	// AUTOPSIA — only on lethal hit (forensicEvaluation reads this)
@@ -99,15 +99,26 @@ function SetLastDamageInfo(mobile, amount, type, source, spell := "")
 			skills_combat.+tactics := AP_GetTrueSkill(mobile, TACTICS);
 		endif
 		autopsy.+skills := skills_combat;
-		autopsy.+taxonomy := npc_elem.Taxonomy;
-		autopsy.+rastros := npc_elem.rastro;
+
+		// Player não tem npcdesc — fallback usa chardata.raca como taxonomy
+		// e marca rastros como humanoides genéricos.
+		if (npc_elem && CStr(npc_elem.Taxonomy))
+			autopsy.+taxonomy := npc_elem.Taxonomy;
+			autopsy.+rastros := npc_elem.rastro;
+		else
+			var chardata := GetObjProperty(mobile, "chardata");
+			if (chardata && chardata.raca)
+				autopsy.+taxonomy := CStr(chardata.raca);
+				autopsy.+rastros := "Pegadas humanoides";
+			else
+				autopsy.+taxonomy := "Indeterminada";
+				autopsy.+rastros := "Indeterminados";
+			endif
+		endif
 
 		SetObjProperty(mobile, "Autopsy", autopsy);
 	endif
 
-	if (last_damage.acctname)
-		last_damage.+acctname := source.acctname;
-	endif
 	if (source.name)
 		last_damage.+name := source.name;
 	else
@@ -245,6 +256,10 @@ function ApplyFieldDamage(defender, amount, dmgType, source := 0)
 	var finalDmg := _GetBaseDamageByType(attackInfo.GetDamage(), dmgType);
 	if (finalDmg > 0)
 		DisplayDamage(defender, finalDmg, source ? source : defender);
+		var life := AP_GetVital(defender, "HITS");
+		if (source && finalDmg >= life)
+			SetLastDamageInfo(defender, finalDmg, dmgType, source);
+		endif
 		ApplyRawDamage(defender, finalDmg);
 	endif
 
@@ -1522,7 +1537,7 @@ if (totalDamage > 0)
 	var life := AP_GetVital(defender, "HITS");
 
 	if (totalDamage >= life)
-		SetLastDamageInfo(defender, totalDamage, posture, attacker);
+		SetLastDamageInfo(defender, totalDamage, posture, attacker, attackInfo.GetSpellId());
 	endif
 
 	var owner := ResolvePetOwner(attacker);
