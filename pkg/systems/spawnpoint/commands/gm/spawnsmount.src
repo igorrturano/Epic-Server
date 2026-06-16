@@ -1,0 +1,7 @@
+use uo;
+
+include ":spawnpoint:spawnFilter";
+
+program spawnsmount(who)
+	ShowSpawnFilteredGump(who, "mount");
+endprogram
