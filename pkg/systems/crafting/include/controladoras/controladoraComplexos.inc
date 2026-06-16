@@ -1219,6 +1219,22 @@ function GeraEsquemaAleatorio(
 			return error{"errorText" := "parâmetro modoEscolhaMaterial inválido."};
 		endif
 
+		// Bug #8 fix: a matriz materiaisPossiveisPorTier é esparsa porque
+		// material.resourceTier e o valor que ele entrega pra caracteristica
+		// (ComponenteEfeito t-N) são eixos independentes. Tier 1 weapons
+		// frequentemente caem em bucket vazio porque o valor rolado não
+		// tem material registrado. Sem fallback, retorna error e o loot
+		// pipeline perde o item. Snap pro bucket vizinho disponível por
+		// modo: OU_MENOR snap pra baixo (semântica); MENOR_QUE_TIER só pra
+		// baixo (estrito); MESMO_TIER nearest (qualquer compromisso já
+		// quebra exato).
+		if(TypeOfInt(materialStruct.materialComponente) == OT_ERROR ||
+			TypeOfInt(materialStruct.materialComponente) == OT_UNINIT)
+			materialStruct := PicarMaterialPorVizinho(
+				materiaisPossiveisPorTier, valorTier, modoEscolhaMaterial
+			);
+		endif
+
 		var opcaoEncontrada := struct{ 
 				itemRef := struct{ objtype := componenteAleatorio, name := componenteDescConfig[hex(componenteAleatorio)].name},
 				componenteTier :=  tierInfo,
@@ -1253,7 +1269,43 @@ function GeraEsquemaAleatorio(
 endfunction
 
 function DeveEscreverMaterial(materiaisPossiveisPorTier, tierMaterial)
-	return !materiaisPossiveisPorTier.exists(tierMaterial) 
-						|| ( materiaisPossiveisPorTier.exists(tierMaterial) 
+	return !materiaisPossiveisPorTier.exists(tierMaterial)
+						|| ( materiaisPossiveisPorTier.exists(tierMaterial)
 							&& RandomIntMinMax(1,1) > 0 );
+endfunction
+
+// Bug #8 fix: snap pro bucket vizinho disponível quando o bucket valor
+// sorteado está vazio. Range de valor é 0..4 (PegaComponenteTierDesc).
+//   MESMO_TIER          → nearest (down então up)
+//   MESMO_TIER_OU_MENOR → snap down primeiro, up só se nada abaixo
+//   MENOR_QUE_TIER      → estrito snap down; nada acima
+// Retorna struct vazia se NENHUM bucket existe (matriz totalmente vazia),
+// deixando o caller cair no error{} original.
+function PicarMaterialPorVizinho(materiaisPossiveisPorTier, valorAlvo, modo)
+	var max_valor := 4;
+
+	// Snap pra baixo
+	var try_v := valorAlvo - 1;
+	while (try_v >= 0)
+		if (materiaisPossiveisPorTier.exists(try_v))
+			return materiaisPossiveisPorTier[try_v];
+		endif
+		try_v := try_v - 1;
+	endwhile
+
+	// MENOR_QUE_TIER: snap só pra baixo (estrito)
+	if (modo == FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER)
+		return struct{};
+	endif
+
+	// MESMO_TIER e MESMO_TIER_OU_MENOR: snap pra cima como último recurso
+	try_v := valorAlvo + 1;
+	while (try_v <= max_valor)
+		if (materiaisPossiveisPorTier.exists(try_v))
+			return materiaisPossiveisPorTier[try_v];
+		endif
+		try_v := try_v + 1;
+	endwhile
+
+	return struct{};
 endfunction
