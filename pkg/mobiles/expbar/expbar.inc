@@ -274,6 +274,97 @@ function NPC_GetChallengeRate(npc_cfg)
 endfunction
 
 // =============================================================================
+// CR BOOSTED - Same as NPC_GetChallengeRate, but applies the EpicBossStruct
+// buffs the GM dialed in (.epicboss / spawner). Without this, a boss spawned
+// with +HP, +resist and +dmg keeps paying the XP of the base template.
+//
+// Stacking model (matches how the buffs apply at spawn in epicBoss.inc):
+//   boss.hits     -> hitsmod, added flat to avg_hp
+//   boss.phresist -> resist_physical_mod, added to phys_avg (capped at 100)
+//   boss.dmg      -> dmgbonus, treated here as a flat addition to avg_dmg
+//
+// Conservative on .dmg: even if a future combat path treats dmgbonus as a
+// multiplier instead of a flat add, a flat add still moves XP in the right
+// direction and never inflates threat into runaway territory.
+// =============================================================================
+function NPC_GetChallengeRateBoosted(npc_cfg, boss)
+    var hits_str := npc_cfg.HITS;
+    if (hits_str == error)
+        return 0.0;
+    endif
+    var avg_hp := NPC_ParseDiceAvg(hits_str);
+    if (boss.hits)
+        avg_hp := avg_hp + CDbl(boss.hits);
+    endif
+
+    var phys_avg := 0.0;
+    var fis_str := npc_cfg.EpicFisResists;
+    if (fis_str != error)
+        var tiers := SplitWords(fis_str);
+        var rsum := 0;
+        foreach t in tiers
+            rsum := rsum + GetResistValueByTier(t);
+        endforeach
+        if (tiers.size() > 0)
+            phys_avg := CDbl(rsum) / CDbl(tiers.size());
+        endif
+    endif
+    if (boss.phresist)
+        phys_avg := phys_avg + CDbl(boss.phresist);
+    endif
+    if (phys_avg > 100.0)
+        phys_avg := 100.0;
+    endif
+
+    var phys_mult := 1.0;
+    if (phys_avg >= 100.0)
+        phys_mult := 5.0;
+    elseif (phys_avg > 0.0)
+        phys_mult := 1.0 / (1.0 - phys_avg / 100.0);
+    endif
+    var eff_hp := avg_hp * phys_mult;
+
+    var avg_dmg := 0.0;
+    var dmg_str := npc_cfg.EpicAttackDamage;
+    if (dmg_str != error)
+        var dmg_tags := SplitWords(dmg_str);
+        var dsum := 0.0;
+        var n := 0;
+        foreach tag in dmg_tags
+            var dice_str := getDamageByTier(tag);
+            if (dice_str == error)
+                continue;
+            endif
+            if (dice_str == 0)
+                continue;
+            endif
+            dsum := dsum + NPC_ParseDiceAvg(dice_str);
+            n := n + 1;
+        endforeach
+        if (n > 0)
+            avg_dmg := dsum / CDbl(n);
+        endif
+    endif
+    if (boss.dmg)
+        avg_dmg := avg_dmg + CDbl(boss.dmg);
+    endif
+
+    var spd_mult := 1.0;
+    var spd_str := npc_cfg.EpicAttackSpeed;
+    if (spd_str != error)
+        spd_mult := NPC_GetSpeedMult(spd_str);
+    endif
+
+    var threat := avg_dmg * spd_mult;
+
+    if (eff_hp <= 0.0 || threat <= 0.0)
+        return 0.0;
+    endif
+
+    return Pow(eff_hp * threat, 0.79);
+endfunction
+
+// =============================================================================
 // LEVEL GAP MODIFIER - Banda por tier: top = tier*4, bot = top - 3
 // (T1=1-4, T2=5-8, T3=9-12, T4=13-16, T5=17-20).
 // Acima da banda decai; abaixo, recompensa matar acima do peso.
@@ -386,9 +477,26 @@ function AwardXPFromKill(killers, corpse)
     var npc_cfg := NPC_GetNPCConfig(template);
     var tier := CInt(npc_cfg.Tier);
 
+    // .epicboss saves the GM's buff intent as EpicBossStruct on the NPC; it
+    // survives onto the corpse. Without honoring it, a custom-buffed boss pays
+    // the XP of its base template and players above the original tier band
+    // hit the level-gap decay (or zero XP at +5). Recompute CR from the
+    // struct, and let the struct's tier override the template tier so the
+    // level-gap band tracks the encounter the GM actually built.
+    var boss := GetObjProperty(corpse, "EpicBossStruct");
+    var cr := 0.0;
+    if (boss && boss != error)
+        if (CInt(boss.tier) > 0)
+            tier := CInt(boss.tier);
+        endif
+        cr := NPC_GetChallengeRateBoosted(npc_cfg, boss);
+    else
+        cr := NPC_GetChallengeRate(npc_cfg);
+    endif
+
     var base_xp := 0.0;
     if (tier > 0)
-        base_xp := tier * NPC_GetChallengeRate(npc_cfg) / 91.0;
+        base_xp := tier * cr / 91.0;
     endif
 
     var party_mult := 1.0;

@@ -23,9 +23,23 @@ const BOSS_LOOT_LOCKOUT := 15;
 const BOSS_LOOT_NEAR    := 32;
 
 // Snapshots nearby players (cmdlevel == 0) and arms the corpse. Returns 1
-// on activation, 0 if no participants were nearby.
+// on activation, 0 if no participants were nearby OR if there's nothing
+// to stamp (no items tagged from_boss_loot=1). Sem itens pra distribuir,
+// armar lockout só atrasa o player sem benefício — o cadáver vira FFA
+// imediato igual non-true_boss.
 function PersonalLoot_Arm(corpse)
 	if (!corpse || corpse == error)
+		return 0;
+	endif
+
+	var has_stampable := 0;
+	foreach scan_item in (EnumerateItemsInContainer(corpse))
+		if (GetObjProperty(scan_item, "from_boss_loot") == 1)
+			has_stampable := 1;
+			break;
+		endif
+	endforeach
+	if (!has_stampable)
 		return 0;
 	endif
 

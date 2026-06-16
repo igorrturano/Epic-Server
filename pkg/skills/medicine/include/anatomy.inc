@@ -167,30 +167,33 @@ endprogram
 
 // Formata o tipo de dano para exibição
 function FormatDamageType(damage_type)
-    case (damage_type)
+    if (typeof(damage_type) != "String")
+        return "Indeterminado";
+    endif
+
+    var t := damage_type;
+    if (len(t) > 6 && t[len(t) - 5, 6] == "Resist")
+        t := t[1, len(t) - 6];
+    elseif (len(t) > 6 && t[len(t) - 5, 6] == "Damage")
+        t := t[1, len(t) - 6];
+    endif
+
+    case (Upper(t))
         "SLASHDAMAGE":
-        "slash":
+        "SLASH":
             return "Cortante";
         "PIERCINGDAMAGE":
-        "piercing":
+        "PIERCING":
             return "Perfurante";
         "BLUNTDAMAGE":
-        "blunt":
+        "BLUNT":
             return "Contundente";
-        "FIRE":
-        "fire":
-            return "Fogo";
-        "COLD":
-        "cold":
-            return "Gelo";
-        "POISON":
-        "poison":
-            return "Veneno";
-        "ENERGY":
-        "energy":
-            return "Energia";
-        default:
-            return damage_type;
+        "FIRE":     return "Fogo";
+        "COLD":     return "Gelo";
+        "POISON":   return "Veneno";
+        "ENERGY":   return "Energia";
+        "FORCED":   return "Místico";
+        default:    return "Indeterminado";
     endcase
 endfunction
 
