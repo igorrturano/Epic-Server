@@ -9,7 +9,12 @@ include ":medicine:disease";
 program TimedScript_disease(params)
 	var mobile := params[1];
 	var diseases_system := GetObjProperty(mobile, "Diseases_System");
-	var falhou := diseases_system.falhou_cura;
+	// Se Diseases_System esta corrompido (error/non-struct), tratar como nao-falhou
+	// para garantir cleanup dos mods de STR/DEX/INT via enddisease_effect.
+	var falhou := 0;
+	if (diseases_system != error && TypeOf(diseases_system) == "Struct")
+		falhou := CInt(diseases_system.falhou_cura);
+	endif
 
 	if (!falhou)
 //print("NETROU NO END DISEASE");

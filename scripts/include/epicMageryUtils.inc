@@ -577,17 +577,19 @@ function SummonSpiritualBlade(who)
 	PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0xB462, 8, 40, COLOR_ELEMENTAL_ENERGY);
 	sleep(2);
 
+	// Descongela ANTES de criar: o canInsert da mochila bloqueia insercao
+	// de jogador congelado/paralisado ("Voce esta paralizado"), o que fazia
+	// o CreateItemInBackpack falhar e a invocacao abortar.
+	who.frozen := 0;
+
 	var weapon := CreateItemInBackpack(who, 0x090C, 1);
 	if (!weapon)
-		who.frozen := 0;
 		Message("Erro ao criar lamina espiritual.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return;
 	endif
 
 	weapon.graphic := weaponData.graphic;
 	weapon.color := 30000;
-
-	who.frozen := 0;
 
 	var equipped := EquipItem(who, weapon);
 	if (!equipped)

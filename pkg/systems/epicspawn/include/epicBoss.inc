@@ -841,9 +841,12 @@ function HandleAddLootItem(who, byref form_data)
     GFTextLine(gump, 50, 90, 1153, "Drop chance (1-100%):");
     GFTextEntry(gump, 50, 120, 100, 20, 1153, "25", 1);
     
-    // Simplified death option - just a checkbox
-    GFCheckBox(gump, 50, 160, 2510, 2511, 0, 2);
-    GFTextLine(gump, 80, 160, 1153, "Generate on death only");
+    // Drop on death: default ON. PersonalLoot só clona itens taggeados
+    // from_boss_loot=1, que é setado em HandleEpicBossLoot pra entradas
+    // com on_death=1. Se o GM desmarcar, o item nasce no backpack do
+    // boss e vira FFA no cadáver (sem clone por participante).
+    GFCheckBox(gump, 50, 160, 2510, 2511, 1, 2);
+    GFTextLine(gump, 80, 160, 1153, "Dropar na morte (distribuir entre participantes)");
     
     // Add Create and Cancel buttons
     GFAddButton(gump, 50, 250, 2128, 2129, 1, 100);

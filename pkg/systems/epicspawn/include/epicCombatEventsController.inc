@@ -392,10 +392,13 @@ function ExecuteSummonNpcsAction(npc, action)
             var summoned := CreateNpcWithPrefix(template, loc.x, loc.y, loc.z, npc.realm);
             
             if (summoned && !summoned.errortext)
-                // Define propriedade de invocado
-                SetObjProperty(summoned, "summoned", 1);
+                // combat_wave (não summoned): marca como wave de boss fight,
+                // mas SEM disparar o branch summoned do NoLootCheck que
+                // destrói o cadáver inteiro. Player que mata add da wave
+                // recebe loot normal (npcdesc.Loot + equip).
+                SetObjProperty(summoned, "combat_wave", 1);
                 SetObjProperty(summoned, "summoner", npc.serial);
-                
+
                 // Define tempo de vida se especificado
                 if (lifetime > 0)
                     SetObjProperty(summoned, "lifetime", ReadGameClock() + lifetime);

@@ -127,6 +127,9 @@ endprogram
 
 // Obtém o nome do tipo da arma baseado no objtype
 function GetWeaponName(objtype)
+	if (CInt(objtype) == 0x1F020)
+		return "Arma natural";
+	endif
 	var cfg := ReadConfigFile(":*:itemdesc");
 	var elem := FindConfigElem(cfg, CInt(objtype));
 	if (elem)
@@ -134,6 +137,58 @@ function GetWeaponName(objtype)
 	else
 		return "Arma não identificada";
 	endif
+endfunction
+
+// Resolve nome de spell por ID, varrendo configs por escola. Aceita int ou
+// formato legacy "spell_NNN" (do DamageController_legacy deletado). Retorna ""
+// se não conseguir resolver.
+function ResolveSpellNameById(spell_ref)
+	var spell_id := 0;
+	if (typeof(spell_ref) == "String")
+		if (len(spell_ref) > 6 && Lower(spell_ref[1, 6]) == "spell_")
+			spell_id := CInt(spell_ref[7, len(spell_ref) - 6]);
+		else
+			spell_id := CInt(spell_ref);
+		endif
+	else
+		spell_id := CInt(spell_ref);
+	endif
+
+	if (spell_id <= 0)
+		return "";
+	endif
+
+	var configs := array{
+		":spells:config/evocation",
+		":spells:config/necromancy",
+		":spells:config/illusion",
+		":spells:config/swordmage",
+		":spells:config/paladin",
+		":spells:config/druid",
+		":spells:config/priest",
+		":spells:config/shaman",
+		":spells:config/demonhunter",
+		":spells:config/trickster",
+		":spells:config/cantrips",
+		":spells:config/bardo",
+		":spells:config/shinobi"
+	};
+
+	foreach path in configs
+		var cfg := ReadConfigFile(path);
+		if (cfg)
+			var elem := FindConfigElem(cfg, spell_id);
+			if (elem)
+				var name := GetConfigString(elem, "Name");
+				if (name)
+					return name;
+				endif
+			endif
+		endif
+		sleepms(2);
+	endforeach
+
+	return "";
 endfunction
 
 // Cria um relatório médico narrativo profissional
@@ -242,8 +297,13 @@ function CreateMedicalReport(results)
 	report += "CONCLUSÃO MÉDICO-LEGAL:\n";
 
 	if (results.exists("lastdamage_spell"))
-		report += "A causa mortis foi determinada como resultado de trauma mágico, especificamente causado pela manifestação do encantamento denominado '"
-																																						+ results["lastdamage_spell"] + "'. ";
+		var resolved := ResolveSpellNameById(results["lastdamage_spell"]);
+		if (resolved)
+			report += "A causa mortis foi determinada como resultado de trauma mágico, especificamente causado pela manifestação do encantamento denominado '"
+																																							+ resolved + "'. ";
+		else
+			report += "A causa mortis foi determinada como resultado de trauma mágico, de origem indeterminada. ";
+		endif
 	elseif (results.exists("lastdamage_amount") && CInt(results["lastdamage_amount"]) > 0)
 		report += "O exame revelou lesões compatíveis com trauma de alta intensidade. ";
 	endif

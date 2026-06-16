@@ -4,6 +4,7 @@ use os;
 include "include/say";
 
 include ":attributes:attributes";
+include ":taming:taming";
 
 program TimedScript_Clumsy(params)
 	var mobile := params[1];
@@ -11,6 +12,10 @@ program TimedScript_Clumsy(params)
 	params := 0; // Not needed anymore.
 
 	mobile.SetMaster(attacker);
+	// Registra o undead em TamedPets do controlador para que ListPetsNear()
+	// o encontre nos teleports/walkOns. _TallyPets poda a entrada quando o
+	// timer expira e o master volta a 0.
+	AddPet(attacker, mobile.serial);
 
 	SetObjProperty(mobile, "owner", attacker.serial);
 	SetObjProperty(mobile, "name", mobile.name);

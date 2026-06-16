@@ -111,12 +111,36 @@ function empty_bottle(character, potion, drinkSound:= 1, silent:= 0)
       props := PegaComponenteFabricacao(potion, "vazio");
     endif
 
+    var flaskObjtype := 0x0F0E;
+    var flaskMaterial := 7139;
+    var flaskColor := 1328;
+    var flaskTier := 1;
+    if (props)
+      if (props.item && props.item.objtype)
+        flaskObjtype := CInt(props.item.objtype);
+      endif
+      if (props.material && props.material.chave)
+        flaskMaterial := CInt(props.material.chave);
+        var configRecursos := ReadConfigFile(":crafting:config/resourceList");
+        var resourceElem := FindConfigElem(configRecursos, props.material.chave);
+        if (resourceElem)
+          var corCfg := CInt(resourceElem.Color);
+          if (corCfg > 0)
+            flaskColor := corCfg;
+          endif
+        endif
+      endif
+      if (props.tier && props.tier.id)
+        flaskTier := CInt(props.tier.id);
+      endif
+    endif
+
     SubtractAmount( potion, 1 );
-		var pot := CreateItemInBackpack(character, 0x0F0E, 1);
+		var pot := CreateItemInBackpack(character, flaskObjtype, 1);
     setobjproperty(pot, "encaixeComponente", "frasco");
-    setobjproperty(pot, "material", 7139);
-    setobjproperty(pot, "tierComponente", props.tier.id ? props.tier.id : 1);
-    pot.color := 1328;
+    setobjproperty(pot, "material", flaskMaterial);
+    setobjproperty(pot, "tierComponente", flaskTier);
+    pot.color := flaskColor;
 	  return 1;
 	endif
   IncRevision(potion);
