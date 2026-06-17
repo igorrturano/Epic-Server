@@ -1,9 +1,13 @@
 use os;
+use uo;
 
 include "include/say";
 include ":charactercreation:habilidades";
 include ":achievements:controllers/ExplorationController";
 include ":abilities:controllers/AbilityMonitor";
+
+const CRITTER_SWAP_REFUND_MS := 50;
+const CRITTER_SWAP_REFUND_STAM := 3;
 
 program checkeventsonwalk()
 	Print("INSTALLING: checkeventsonwalk...");
@@ -18,5 +22,72 @@ exported function CheckEventsWalk(who, byref packet)
 		endif
 	endif
 
+	ScheduleCritterSwapRefund(who, packet);
+
 	return 0;
+endfunction
+
+// O core POL deduz stamina ao "swap places" com um NPC pequeno. Sem
+// compensar, atravessar uma fileira de critters drena stam ate o player
+// travar. Agendamos o refund async porque o packet hook roda ANTES da
+// deducao do core — refund inline seria clipado pelo cap de stam.
+function ScheduleCritterSwapRefund(who, byref packet)
+	var dest := GetWalkDestination(who, packet);
+	if (!dest)
+		return;
+	endif
+	if (!HasCritterAtTile(dest.x, dest.y, who.z, who.realm, who.serial))
+		return;
+	endif
+	start_script(":checkeventsonwalk:critterRefund",
+	              array{ who.serial, CRITTER_SWAP_REFUND_STAM,
+	                     CRITTER_SWAP_REFUND_MS });
+endfunction
+
+// Retorna { x, y } do tile destino, ou 0 se o packet apenas virou o
+// player (sem movimento real — first step em direcao nova).
+function GetWalkDestination(who, byref packet)
+	var dir := packet.GetInt8(1) & 0x07;
+	if (dir != who.facing)
+		return 0;
+	endif
+	var dx := array{  0,  1,  1,  1,  0, -1, -1, -1 };
+	var dy := array{ -1, -1,  0,  1,  1,  1,  0, -1 };
+	return struct{ x := who.x + dx[dir + 1],
+	               y := who.y + dy[dir + 1] };
+endfunction
+
+function HasCritterAtTile(x, y, z, realm, ignore_serial)
+	var mobs := ListMobilesNearLocationEx(x, y, z, 1, LISTEX_FLAG_NORMAL, realm);
+	foreach mob in mobs
+		if (mob.serial == ignore_serial)
+			continue;
+		endif
+		if (mob.x != x || mob.y != y)
+			continue;
+		endif
+		if (IsCritter(mob))
+			return 1;
+		endif
+	endforeach
+	return 0;
+endfunction
+
+function IsCritter(mob)
+	var tmpl := mob.npctemplate;
+	if (!tmpl || tmpl == error || tmpl.errortext)
+		return 0;
+	endif
+	var parts := SplitWords(tmpl, ":");
+	var bare := parts[parts.Size()];
+	var critters := array{
+		"miniaranha",
+		"spiderling",
+		"minibesouro",
+		"miniescorpiao",
+		"minilagarto",
+		"minisapo",
+		"minicaranguejo"
+	};
+	return (bare in critters);
 endfunction
