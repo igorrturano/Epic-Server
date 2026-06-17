@@ -1,0 +1,29 @@
+use uo;
+use os;
+use vitals;
+
+include ":attributes:attributes";
+
+// Devolve stamina ao player apos o core POL processar o swap places com
+// um critter. Roda async porque o packet hook executa ANTES da deducao
+// do core; refund inline seria clipado pelo cap de stam.
+program critterRefund(args)
+	var serial := args[1];
+	var refund := args[2];
+	var delay_ms := args[3];
+
+	sleepms(delay_ms);
+
+	var who := SystemFindObjectBySerial(serial);
+	if (!who || who.errortext)
+		return;
+	endif
+
+	var current := AP_GetVital(who, "Stamina");
+	var maxv := AP_GetVitalMaximumValue(who, "Stamina");
+	var restored := current + refund;
+	if (restored > maxv)
+		restored := maxv;
+	endif
+	AP_SetVital(who, "Stamina", restored);
+endprogram
