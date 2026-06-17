@@ -524,6 +524,19 @@ function AwardXPFromKill(killers, corpse)
         if (killer_xp == 0 && lvl_mod > 0.0 && base_xp > 0.0)
             killer_xp := 1;
         endif
+
+        // Aviso throttled (10 min) quando o decay zerou a recompensa por gap >=5
+        // tiers acima da banda. Sem isso o player acha que e bug. Mesmo padrao
+        // de throttle por prop usado em GrantCraftXP.
+        if (tier > 0 && lvl_mod == 0.0)
+            var now := POLCore().systime;
+            var lastNotice := GetObjProperty(killer, "xpEasyKillNoticeAt");
+            if (lastNotice == error || !lastNotice || now - CInt(lastNotice) >= 600)
+                SendSysMessage(killer, "Você não aprende nada matando criaturas tão abaixo do seu nível.");
+                SetObjProperty(killer, "xpEasyKillNoticeAt", now);
+            endif
+        endif
+
         AddXP(killer, killer_xp, XP_NPC_KILL);
         MasteryCombat_Advance(killer, struct{ kills := 1 });
         AchievementCombat_Advance(killer, corpse, struct{ xp := killer_xp, kills := 1 });
