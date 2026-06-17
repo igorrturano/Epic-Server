@@ -1,0 +1,21 @@
+use uo;
+use os;
+use util;
+
+var naipes := array{ "Copas", "Ouros", "Espadas", "Paus" };
+var valores := array{
+    "Ás", "Dois", "Três", "Quatro", "Cinco", "Seis", "Sete",
+    "Oito", "Nove", "Dez", "Valete", "Dama", "Rei"
+};
+
+program BaralhoComum(who, item)
+    var naipe := naipes[RandomInt(naipes.size()) + 1];
+    var valor := valores[RandomInt(valores.size()) + 1];
+    var carta := valor + " de " + naipe;
+
+    PlaySoundEffect(who, 0x248);
+    item.graphic := 0x12A9;
+    PrintTextAbove(who, "*saca uma carta do baralho: " + carta + "*");
+    Sleep(2);
+    item.graphic := 0x12AB;
+endprogram
