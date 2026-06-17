@@ -141,6 +141,10 @@ function PegaDescComum(objeto,xDesc := "")
 		xDesc := xDesc + WHITE + getQuality(objeto.quality) + "<br>"; //exibe apenas dois digitos
 	endif*/
 
+	if (objeto.graphic == 0x2006) // cadáver — não exibe Condição
+		return xDesc;
+	endif
+
 	var cond := GetCondition(objeto);
 
 	if(objeto.ISA(POLCLASS_EQUIPMENT) || objeto.isVendorTemplate)
@@ -477,6 +481,9 @@ function PegaDescDoses(objeto, xDesc)
 endfunction
 
 function PegaDescEmperrado(objeto, xDesc)
+	if (objeto.graphic == 0x2006) // cadáver
+		return xDesc;
+	endif
 	if(objeto.ISA(POLCLASS_LOCKABLE))
 		if(IsEmperrado(objeto))
 			xDesc := xDesc + "[Emperrado]<br>";
