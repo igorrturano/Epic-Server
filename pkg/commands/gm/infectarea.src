@@ -23,7 +23,6 @@ const PER_PAGE        := 6;
 
 program infectarea(mob)
 
-
 	while (1)
 		var gump := Gump(mob, "Área de Infecção", 340, 210);
 
@@ -207,11 +206,12 @@ function FluxoCriarArea(mob)
 		endif
 	endif
 
-	// Cria item marcador no backpack do GM, seta invisible, depois move para o local final
-	// (evita que clientes em range no momento da criação recebam o 0x1A visível)
+	// Cria marcador invisível no backpack do GM, depois move para o local final
+	// (evita que clientes em range recebam o 0x1A visível do CreateItemAtLocation).
+	// Fallback: cria direto em loc — aceita o flash, melhor que abortar.
 	var marker := CreateItemInBackpack(mob, MARKER_GRAPHIC, 1);
 	if (!marker)
-		marker := CreateItemAtLocation(mob.x, mob.y, mob.z, MARKER_GRAPHIC, 1, mob.realm);
+		marker := CreateItemAtLocation(loc.x, loc.y, loc.z, MARKER_GRAPHIC, 1, mob.realm);
 		if (!marker)
 			SendSysMessageEx(mob, "Falha ao criar marcador no local.", SSM_FAIL);
 			return;
@@ -224,6 +224,11 @@ function FluxoCriarArea(mob)
 	marker.name      := "Infecção: " + nome;
 
 	var moveRes := MoveObjectToLocation(marker, loc.x, loc.y, loc.z, mob.realm, MOVEOBJECT_FORCELOCATION);
+	if (!moveRes)
+		SendSysMessageEx(mob, "Falha ao posicionar marcador: " + moveRes.errortext, SSM_FAIL);
+		DestroyItem(marker);
+		return;
+	endif
 
 	// Persiste no datafile
 	var area_id := "area_" + marker.serial;
@@ -234,10 +239,16 @@ function FluxoCriarArea(mob)
 		df := OpenDataFile(INFECTAREA_DF);
 	endif
 	if (!df)
+		SendSysMessageEx(mob, "Falha ao abrir datafile " + INFECTAREA_DF + ".", SSM_FAIL);
+		DestroyItem(marker);
+		return;
 	endif
 
 	var elem := df.CreateElement(area_id);
 	if (!elem)
+		SendSysMessageEx(mob, "Falha ao criar elemento '" + area_id + "': " + elem.errortext, SSM_FAIL);
+		DestroyItem(marker);
+		return;
 	endif
 	elem.SetProp("marker_serial", marker.serial);
 	elem.SetProp("name",          nome);
@@ -420,9 +431,7 @@ function EnsureWatcherRunning()
 			if (delta < HB_TIMEOUT)
 				return;
 			endif
-		else
 		endif
-	else
 	endif
 
 	start_script(WATCHER_SCRIPT);
