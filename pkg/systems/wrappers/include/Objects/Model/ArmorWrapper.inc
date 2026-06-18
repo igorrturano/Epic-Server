@@ -26,7 +26,9 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 			this.TipoProtecao := this.GetTemplate().TipoProtecao ?: error{ errortext := "The item have no Protection Type!" };
 			this.Resists := this.__CalculateArmorResist();
 			this.ResistsMod := ResistModCollection();
-			this.SetResistsMod(ResistModFabricacao(this.GetObjRef() ? this.GetObjRef() : this.GetTemplate()));
+			// Template-only: ObjRef = IsTemplateException (truthy). Passa `this`
+			// pro ResistModFabricacao ler CProps via UObjectWrapper branch.
+			this.SetResistsMod(ResistModFabricacao(this.GetObjRef() is @Exception ? this : this.GetObjRef()));
 			if (this.GetObjRef())
 				var _runeType := GetObjProperty(this.GetObjRef(), "priestrune");
 				var _runeCharges := CInt(GetObjProperty(this.GetObjRef(), "runecharges"));
@@ -180,7 +182,8 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	 * @return Retorna a própria instância do objeto para encadeamento de métodos, ou um objeto Exception em caso de erro
 	 */
 	function SetResistsMod(this, resists)
-		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
+		// Sem guarda contra ObjRef=Exception: este setter so muta this.ResistsMod,
+		// nunca o ObjRef — funciona em wrapper template-only.
 		var ret := this.ResistsMod.InsertMod(resists);
 
 		if(ret is @Exception) return this.ret; endif
