@@ -1,6 +1,7 @@
 use uo;
 use os;
 use util;
+use guilds;
 
 include ":datafile:datafile";
 include ":containers:storageAreas";
@@ -9,6 +10,7 @@ include "include/say";
 include ":keys:key";
 include "include/client";
 include ":itemutils:itemdesc";
+include ":faccao:include/aluguelporta";
 
 const CYCLE_WAIT := 60 * 180;
 const MOEDAS := 47715;
@@ -21,9 +23,125 @@ program GlobalInnControl()
 	// set_priority(1);
 	while (1)
 		InnKeeperChecks();
+		CheckFaccaoAlugavelDoors();
 		sleep(CYCLE_WAIT);
 	endwhile
 endprogram
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cobranca semanal das portas alugaveis de faccao. Le a global property
+// preenchida pelo gump do mural (faccao.src) e processa cada porta em ordem:
+//   - se nao tem inquilino: pula
+//   - se faltam dias pra completar uma semana desde RentData: pula
+//   - tenta debitar valor do banco do inquilino; se faltar, da mochila
+//   - sucesso: atualiza RentData, credita prop "money" da guild
+//   - falha: rotaciona LockId (invalida chave), zera RentInquilino/RentData,
+//           mantem Alugavel=1 (porta volta pra fila), avisa player se online
+// O cidade/regiao bancaria usada e a City da guild (prop "city"), com fallback
+// pra CP_DEFAULT_AREA.
+// ─────────────────────────────────────────────────────────────────────────────
+function CheckFaccaoAlugavelDoors()
+	var doors := GetGlobalProperty(FACCAO_ALUGAVEL_DOORS_PROP);
+	if (doors == error || TypeOf(doors) != "Array" || doors.size() == 0)
+		return 1;
+	endif
+
+	var i := 1;
+	while (i <= doors.size())
+		var porta_serial := CInt(doors[i]);
+		var porta := SystemFindObjectBySerial(porta_serial);
+		if (porta == error)
+			doors.erase(i);
+			SetGlobalProperty(FACCAO_ALUGAVEL_DOORS_PROP, doors);
+			sleepms(20);
+			continue;
+		endif
+
+		if (!CInt(GetObjProperty(porta, "Alugavel")))
+			doors.erase(i);
+			SetGlobalProperty(FACCAO_ALUGAVEL_DOORS_PROP, doors);
+			sleepms(20);
+			continue;
+		endif
+
+		var inq_serial := CInt(GetObjProperty(porta, "RentInquilino"));
+		if (inq_serial <= 0)
+			i := i + 1;
+			sleepms(20);
+			continue;
+		endif
+
+		var rentdate := CInt(GetObjProperty(porta, "RentData"));
+		if (rentdate <= 0)
+			SetObjProperty(porta, "RentData", polcore().systime);
+			i := i + 1;
+			sleepms(20);
+			continue;
+		endif
+
+		var ticks := CalcularDias(rentdate);
+		if (ticks < FACCAO_RENT_DAYS)
+			i := i + 1;
+			sleepms(20);
+			continue;
+		endif
+
+		_CobrarFaccaoAlugavel(porta, inq_serial);
+		i := i + 1;
+		sleepms(20);
+	endwhile
+	return 1;
+endfunction
+
+// Tenta cobrar uma porta. Despeja em caso de falha. Nao retorna nada
+// significativo — efeitos colaterais nos props da porta + global money da
+// guild.
+function _CobrarFaccaoAlugavel(porta, inq_serial)
+	var valor := CInt(GetObjProperty(porta, "RentValue"));
+	var guild_serial := CInt(GetObjProperty(porta, "RentGuildSerial"));
+	var nome := CStr(GetObjProperty(porta, "RentName"));
+	if (nome == "" || nome == "0") nome := "Quarto sem nome"; endif
+
+	var player := SystemFindObjectBySerial(inq_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+	if (player == error)
+		_DespejarFaccaoAlugavel(porta, 0, nome, "inquilino sumiu");
+		return;
+	endif
+
+	var bank_region := CP_DEFAULT_AREA;
+	if (guild_serial > 0)
+		var g := FindGuild(guild_serial);
+		if (g)
+			var city := CStr(g.getProp("city"));
+			if (city != "" && city != "0")
+				bank_region := city;
+			endif
+		endif
+	endif
+
+	if (FaccaoAlugavel_DebitarInquilino(player, bank_region, valor))
+		SetObjProperty(porta, "RentData", polcore().systime);
+		FaccaoAlugavel_CreditarGuild(guild_serial, valor);
+		if (player.connected)
+			SendSysMessageEx(player, "Aluguel de '" + nome + "' (" + valor +
+									 " moedas) cobrado.", SSM_INFO);
+		endif
+	else
+		_DespejarFaccaoAlugavel(porta, player, nome, "sem fundos");
+	endif
+endfunction
+
+// Despejo: rotaciona LockId pra invalidar a chave do inquilino, zera estado,
+// mantem Alugavel=1 pra porta voltar a ficar disponivel pro lider.
+function _DespejarFaccaoAlugavel(porta, player, nome, motivo)
+	FaccaoAlugavel_RotateLockId(porta);
+	SetObjProperty(porta, "RentInquilino", 0);
+	SetObjProperty(porta, "RentData", 0);
+	if (player != 0 && player != error && player.connected)
+		SendSysMessageEx(player, "Voce foi despejado de '" + nome + "' (" + motivo +
+								 "). A chave nao serve mais.", SSM_HARMFUL);
+	endif
+endfunction
 
 function InnKeeperChecks()
 	var innkeeper := getglobalproperty("InnKeeper");
