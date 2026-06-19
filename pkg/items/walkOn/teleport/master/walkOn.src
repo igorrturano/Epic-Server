@@ -174,7 +174,7 @@ function _ExecutarTeleporte(mobile, tile, dest, fd)
 	MoveObjectToLocation(mobile, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
 
 	if (CInt(fd.animais) == 1)
-		var pets := ListPetsNear(mobile, 4);
+		var pets := ListAllPetsAndSummonedPetsNear(mobile, 4);
 		foreach pet in pets
 			SetObjProperty(pet, "#Teleported", ReadMillisecondClock());
 			MoveObjectToLocation(pet, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
