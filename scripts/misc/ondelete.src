@@ -11,6 +11,7 @@ use storage;
 include ":timeutils:time";
 include ":attributes:attributes";
 include ":stables:include/stable";
+include ":taming:taming";
 
 program core_onDelete(who)
 	var create_time := who.createdat;
@@ -29,9 +30,16 @@ program core_onDelete(who)
 endprogram
 
 function KillOwnedPets(who, raw)
+	// Pets stabled/limbo tem invul concedido via GrantPrivilege — ApplyDamage
+	// (raw=0) e' ignorado. Limpa estado antes de matar para nao sobrarem
+	// refs orfas (StoredAnimal no post, StableData no pet).
 	var tamed := Getobjproperty(who, "TamedPets");
-	if (tamed)
+	if (tamed && tamed != error)
 		foreach serial in tamed
+			var pet := SystemFindObjectBySerial(serial);
+			if (PetIsValid(pet))
+				ClearPetStableAndLimboState(pet);
+			endif
 			KillPetBySerial(serial, raw);
 		endforeach
 	endif
@@ -42,6 +50,10 @@ function KillOwnedPets(who, raw)
 	endif
 	var stabled := data["stabled_pets"];
 	foreach stabled_serial in stabled
+		var pet := SystemFindObjectBySerial(stabled_serial);
+		if (PetIsValid(pet))
+			ClearPetStableAndLimboState(pet);
+		endif
 		KillPetBySerial(stabled_serial, raw);
 	endforeach
 endfunction

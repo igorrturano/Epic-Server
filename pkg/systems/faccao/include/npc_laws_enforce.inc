@@ -1,5 +1,6 @@
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
+include ":stables:include/stable";
 include "include/arrays";
 
 // npc_laws_enforce.inc — Enforcement de leis de faccao para NPCs de combate.
@@ -313,12 +314,10 @@ function _CheckLawTarget(law, who, is_member, is_full, is_honorary, is_leader)
 endfunction
 
 function _CheckPets(who)
-    var pets := GetObjProperty(who, "TamedPets");
-    if (!pets || !pets.size()) return 0; endif
-    foreach serial in pets
+    // Stabled/limbo nao contam para lei (pet guardado nao infringe notaming).
+    foreach pet in GetActivePets(who)
         sleepms(2);
-        var pet := SystemFindObjectBySerial(CInt(serial));
-        if (pet && pet.isA(POLCLASS_MOBILE) && !pet.dead &&
+        if (pet.isA(POLCLASS_MOBILE) && !pet.dead &&
                 pet.master == who && Distance(pet, who) < 12)
             return 1;
         endif
@@ -646,12 +645,10 @@ function CheckPlayerLaws(who)
                 break;
 
             "notaming":
-                var _tam := GetObjProperty(who, "TamedPets");
-                if (!_tam || !_tam.size()) break; endif
-                foreach _ts_serial in _tam
+                // Stabled/limbo nao contam para a lei notaming.
+                foreach _tp in GetActivePets(who)
                     sleepms(2);
-                    var _tp := SystemFindObjectBySerial(CInt(_ts_serial));
-                    if (_tp && _tp.isA(POLCLASS_MOBILE) && !_tp.dead &&
+                    if (_tp.isA(POLCLASS_MOBILE) && !_tp.dead &&
                             _tp.master == who && Distance(_tp, me) < 12)
                         warning := who; warn_type := 25; warn_tier := 1; warn_opt := _tp;
                         break;

@@ -9,6 +9,59 @@ const STABLE_STATE_STABLED := "stabled";
 const STABLE_STATE_LIMBO   := "limbo";
 
 // -----------------------------------------------------------------------------
+// Helpers genericos — substituem patterns error-truthy repetidos.
+// -----------------------------------------------------------------------------
+
+// Tri-check: ref valida (nao destruida, nao error).
+function PetIsValid(pet)
+	return (pet && pet != error);
+endfunction
+
+// GetObjProperty + descarte de error truthy. Use em vez de `if (GetObjProperty(...))`.
+function PropTruthy(obj, name)
+	var v := GetObjProperty(obj, name);
+	return (v != error && v);
+endfunction
+
+// Concentra Grant/Revoke + enable/disable em um lugar so. Entrada e saida
+// de limbo/stable usavam combinacoes diferentes — agora todas passam por aqui.
+function SetLimboInvul(pet, on)
+	if (!PetIsValid(pet))
+		return 0;
+	endif
+	if (on)
+		GrantPrivilege(pet, "invul");
+		pet.enable("invul");
+	else
+		RevokePrivilege(pet, "invul");
+		pet.disable("invul");
+	endif
+	return 1;
+endfunction
+
+// Filtra TamedPets devolvendo apenas pets manipulaveis no mundo: nao orfaos,
+// nao stabled, nao em limbo. Use para qualquer logica que precise iterar
+// pets "ativos" — logon/logout, kill em massa, leis de faccao, BeastCommand.
+function GetActivePets(who)
+	var pets := GetObjProperty(who, "TamedPets");
+	if (pets == error || !pets)
+		return array;
+	endif
+	var active := array;
+	foreach serial in pets
+		var pet := SystemFindObjectBySerial(serial);
+		if (!PetIsValid(pet))
+			continue;
+		endif
+		if (IsStabled(pet) || IsInLimbo(pet))
+			continue;
+		endif
+		active.append(pet);
+	endforeach
+	return active;
+endfunction
+
+// -----------------------------------------------------------------------------
 // Pet StableData
 // -----------------------------------------------------------------------------
 // Dicionario em GetObjProperty(pet, "StableData") com o formato:
@@ -112,6 +165,11 @@ endfunction
 function GetOwnerStable(owner)
 	var data := GetObjProperty(owner, "StableData");
 	if (data == error)
+		return error;
+	endif
+	// Defensiva: prop StableData pode existir em formato legado (string/int/array)
+	// se houver migracao parcial. data.Exists em algo que nao e' dict quebra.
+	if (TypeOf(data) != "Dictionary")
 		return error;
 	endif
 	if (!data.Exists("stabled_pets") || data["stabled_pets"] == error)
@@ -265,8 +323,7 @@ function EnterStable(owner, pet, post, days, price_per_day)
 	endif
 	pet.hidden := 0;
 	pet.setParalyzed(1);
-	GrantPrivilege(pet, "invul");
-	pet.enable("invul");
+	SetLimboInvul(pet, 1);
 	SetObjProperty(post, "StoredAnimal", pet.serial);
 
 	SetPetStable(pet, NewPetStableData(post.serial, days, price_per_day));
@@ -283,8 +340,7 @@ function RestageStable(owner, pet, post)
 	endif
 	pet.hidden := 0;
 	pet.setParalyzed(1);
-	GrantPrivilege(pet, "invul");
-	pet.enable("invul");
+	SetLimboInvul(pet, 1);
 	SetObjProperty(post, "StoredAnimal", pet.serial);
 
 	var pet_data := GetPetStable(pet);
@@ -308,8 +364,7 @@ function ExitStable(owner, pet, post)
 		return 0;
 	endif
 	pet.setParalyzed(0);
-	RevokePrivilege(pet, "invul");
-	pet.disable("invul");
+	SetLimboInvul(pet, 0);
 	if (post)
 		EraseObjProperty(post, "StoredAnimal");
 	endif
@@ -320,6 +375,9 @@ function ExitStable(owner, pet, post)
 		SetPetStable(pet, pet_data);
 	endif
 
+	// Remove so do array stabled_pets. NAO zera owner.post: contrato continua
+	// ativo (pet pode voltar a este post via RestageStable). Limpeza do post
+	// e' responsabilidade de CloseContractForOwner/ReleaseAsWild.
 	if (owner)
 		RemoveOwnerStabledPet(owner, pet.serial);
 	endif
@@ -334,8 +392,7 @@ function ReleaseAsWild(owner, pet, post)
 		return 0;
 	endif
 	pet.setParalyzed(0);
-	RevokePrivilege(pet, "invul");
-	pet.disable("invul");
+	SetLimboInvul(pet, 0);
 	if (post)
 		EraseObjProperty(post, "StoredAnimal");
 	endif
@@ -367,8 +424,11 @@ endfunction
 // Limbo (.assoviar)
 // -----------------------------------------------------------------------------
 
-// Marca o pet como em limbo e salva a origem. Caller faz o movimento fisico
-// (teleport + hidden + frozen + invul) via :stables:sendpetlimbo.
+// Marca o pet como em limbo e ja aplica os flags fisicos protetivos
+// (hidden/frozen/invul/paralyzed) SINCRONAMENTE — antes era so' state, e o
+// sendpetlimbo async aplicava o resto depois. A janela de 300ms+ deixava o
+// pet vulneravel a outros sistemas (estabulo faccional, brain, .pe).
+// O movimento para (0,0,0) e o run-away continuam no script async.
 function EnterLimbo(owner, pet)
 	if (!owner || !pet)
 		return 0;
@@ -383,6 +443,13 @@ function EnterLimbo(owner, pet)
 	};
 	SetPetStable(pet, pet_data);
 	SetOwnerLimboPet(owner, pet.serial);
+
+	// hidden+invul aplicados sincronamente para fechar a janela de 300ms+
+	// em que outros sistemas (estabulo faccional, brain, .pe) podiam pegar
+	// o pet "ativo" antes do sendpetlimbo terminar. frozen/paralyzed ficam
+	// pro async porque sendpetlimbo precisa de RunPetAwayFrom (animacao).
+	pet.hidden := 1;
+	SetLimboInvul(pet, 1);
 	return 1;
 endfunction
 
@@ -432,6 +499,16 @@ function FindSpawnLocationNearby(character)
 		var z := CInt(sh.z);
 		// Tolerancia 10 cobre escadas/slopes mas rejeita andar errado.
 		if (Abs(z - character.z) > 10)
+			continue;
+		endif
+		// Rejeita pontos sem linha de visao para o dono (atras de parede): o
+		// pet nasceria preso e o walk_event nunca conseguiria traze-lo de volta.
+		if (!CheckLosAt(character, x, y, z))
+			continue;
+		endif
+		// Confirma que da pra dar o primeiro passo do ponto em direcao ao dono
+		// (rejeita tiles bloqueados/encurralados). "L" = movimento terrestre.
+		if (CanWalk("L", x, y, z, character.x, character.y) == error)
 			continue;
 		endif
 		return struct{ x := x, y := y, z := z };
