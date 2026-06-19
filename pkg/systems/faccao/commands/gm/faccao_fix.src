@@ -12,6 +12,8 @@
 //   - honorary_guild_id stale (guild deletada)
 //   - Player com honorary_guild_id mas faltando no array do guild
 //   - Member struct ausente para membros full
+//   - dados_convite.convidado_por apontando para mob deletado
+//     (causa "Membro Desconhecido" no mural)
 // ============================================================
 
 use uo;
@@ -302,6 +304,50 @@ function _FixPlayer(who, char, dry_run, counters)
             _Log(who, "Player '{}': dados_convite sem facção associada → removendo".format(char.name), dry_run);
             if (!dry_run) EraseObjProperty(char, "dados_convite"); endif
             counters.fixes := counters.fixes + 1;
+        endif
+    endif
+
+    // 5b. convidado_por órfão — reaponta para o líder atual da facção.
+    // Sem isso, o mural exibe "Membro Desconhecido" para todos os convidados
+    // de um convidador deletado (cadeia .r quebra em _ResolveRPName).
+    var convite_atual := GetObjProperty(char, "dados_convite");
+    if (convite_atual && convite_atual != error && convite_atual.convidado_por)
+        var convidador_serial := CInt(convite_atual.convidado_por);
+        var convidador := SystemFindObjectBySerial(convidador_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+        if (!convidador)
+            var leader_serial := 0;
+            var origem := "";
+            if (pg)
+                leader_serial := CInt(pg.GetProp("leader"));
+                origem := pg.GetProp("name");
+            elseif (hon_id)
+                var hon_g := FindGuild(hon_id);
+                if (hon_g)
+                    leader_serial := CInt(hon_g.GetProp("leader"));
+                    origem := hon_g.GetProp("name");
+                endif
+            endif
+            if (!origem) origem := "?"; endif
+
+            if (leader_serial && leader_serial != convidador_serial)
+                _Log(who, "Player '{}': convidado_por={} morto → repointando para líder de '{}' (serial {})".format(
+                    char.name, convidador_serial, origem, leader_serial), dry_run);
+                if (!dry_run)
+                    var np := convite_atual.nome_personalizado;
+                    if (np == error) np := ""; endif
+                    var cr := convite_atual.cargo_rp;
+                    if (cr == error) cr := "Membro"; endif
+                    var dc := convite_atual.data_convite;
+                    if (dc == error) dc := POLCore().systime; endif
+                    SetObjProperty(char, "dados_convite", struct{
+                        "nome_personalizado" := np,
+                        "cargo_rp"           := cr,
+                        "data_convite"       := dc,
+                        "convidado_por"      := leader_serial
+                    });
+                endif
+                counters.fixes := counters.fixes + 1;
+            endif
         endif
     endif
 
