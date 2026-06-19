@@ -177,9 +177,18 @@ function SplashObject(who, bucket, targ)
 			SetName(aguinha, "leite derramado");
 			PrintTextAbove(targ, "*" + name + " esta cheirando leite*");
 		elseif (bucket.objtype == FRESH_WATER_BUCKET)
-			var cheiro_expira := GetObjProperty(targ, "#cheiro_expira");
-			if (cheiro_expira && !cheiro_expira.errortext)
+			var cheiro_expira := CInt(GetObjProperty(targ, "#cheiro_expira"));
+			var tem_descmod   := CStr(GetObjProperty(targ, "descmodboss")) == "*Cheirando a fezes*";
+			if (cheiro_expira > 0 || tem_descmod)
+				var cheiro_pid := CInt(GetObjProperty(targ, "#cheiro_pid"));
+				if (cheiro_pid > 0)
+					var proc := GetProcess(cheiro_pid);
+					if (proc && proc.pid)
+						proc.kill();
+					endif
+				endif
 				EraseObjProperty(targ, "#cheiro_expira");
+				EraseObjProperty(targ, "#cheiro_pid");
 				EraseObjProperty(targ, "descmodboss");
 				PrintTextAbove(targ, "*" + name + " se livra do cheiro de fezes*");
 			endif
