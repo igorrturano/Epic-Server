@@ -1,5 +1,6 @@
 use uo;
 include "include/facings";
+include ":stables:include/stable";
 
 function isWoodWeapon(who)
     var wood_weapons := { 
@@ -181,23 +182,15 @@ endfunction
 
 //pega os pets da pessoa na area
 function ListPetsNear(who,  range)
-
 	var pets := array;
-	var tamed := GetObjProperty(who, "TamedPets");
-	if ( !tamed )
-		return pets;
-	endif
-
-	foreach serial in tamed
-		var pet := SystemFindObjectBySerial(serial);
-		if ( (pet.master == who)  && (Distance(pet, who) <= range))
+	// Stabled/limbo nao participam de combate — GetActivePets filtra.
+	foreach pet in GetActivePets(who)
+		if ((pet.master == who) && (Distance(pet, who) <= range))
 			pets.append(pet);
 		endif
 		sleepms(2);
 	endforeach
-
 	return pets;
-
 endfunction
 
 // True for NPCs flagged as a "true boss" via the `true_boss` ObjProp.
