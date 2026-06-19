@@ -3,6 +3,7 @@ use cfgfile;
 
 include "include/say";
 include ":tn:tngumps";
+include ":expbar:expbar";
 
 program resethab(who)
 
@@ -45,11 +46,17 @@ program resethab(who)
 		if (key != error)
 			myhabs.erase(key);
 			habs[key] := 1;
+			// Slot par reaberto: pergaminho original ja foi destruido em
+			// comprahab, entao enfileira um novo p/ o targ poder recomprar.
+			if (cint(key) % 2 == 0)
+				AddPergaminhoPendente(targ, cint(key));
+			endif
 		endif
 	endforeach
 
 	SetObjProperty(targ, "buyhab", habs);
 	SetObjProperty(targ, "myhabs", myhabs);
+	EntregarPergaminhosPendentes(targ);
 
 	SendSysMessageEx(who, "Habs resetadas do alvo: " + opts, SSM_INFO);
 	SendSysMessageEx(targ, "Suas habs foram resetadas " + opts);
