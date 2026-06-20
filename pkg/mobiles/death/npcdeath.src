@@ -30,11 +30,13 @@ include ":expbar:expbar";
 include ":epicAI:epicai";
 include ":tn:cooldown";
 include ":hotbar:include/custombuff";
+include ":killlog:include/killlog";
 // include ":bounty:include/bountyCore";  // WIP: pacote bounty/ ainda nao commitado
 // include ":entropy:entropy";
 
 program core_npcDeath(params)
 	var corpse := params[1];
+	LogVictimDeath(corpse);
 	// Check if this is a conquest NPC
 	// if (corpse.GetProp("conquest_totem"))
 	// 	CNQST_OnNPCDeath(corpse);
