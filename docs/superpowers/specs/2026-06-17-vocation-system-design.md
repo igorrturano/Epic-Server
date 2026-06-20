@@ -91,6 +91,14 @@ eixos e deixá-los compor.**
 8. **Trava generativa: ≤7 vocações × ~3 árvores.** Ideia nova cabe numa célula
    ou é flavor (habilidade/magia dentro de uma árvore) — não classe.
 
+9. **Conjurar ≠ comandar.** Qualquer fonte mágica (Arcana/Theology/Nature/…)
+   pode **conjurar, transformar ou explodir** — invocações transientes, mágicas,
+   regidas pela IA, que expiram. Só a **Regência** **comanda** um proxy leal, que
+   escala com você e persiste. O minion-master é exclusividade do Encantador;
+   toda outra fonte só ganha a versão temporária. Resolve Necro↔Magus e
+   Druida↔Caçador de Feras: o Druida *invoca/vira* fera mas não a comanda; o
+   Magus *ergue/estraçalha* mortos mas não os rege.
+
 ---
 
 ## Modelo de skills (3 camadas)
