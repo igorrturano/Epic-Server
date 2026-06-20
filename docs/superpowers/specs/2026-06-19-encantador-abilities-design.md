@@ -50,19 +50,20 @@ Não é árvore; é a base que existe antes de qualquer pick:
 
 ---
 
-## Recurso — Medidor de Comando
+## Recurso — `stam + delay` (sem medidor)
 
-Princípio #7 do doc: recurso é **medidor enchido agindo**, nunca inventário.
+*Menos é mais.* O Encantador **não** tem barra própria — descartamos o "Medidor
+de Comando" pra manter o sistema legível e consistente com as outras vocações.
 
-- **Enche** enquanto o proxy está engajado (causa/recebe dano) e, devagar,
-  passivamente enquanto há um proxy ativo.
-- **Decai / não gera** quando você está sem proxy — reforça a fantasia: *sozinho
-  você é pouco; tudo passa pelo proxy.*
-- **Gasta** nas habilidades **Ativas** das árvores (custo baixo nos tiers 1/3,
-  alto nos tiers 7/10). As **Passivas** são de graça.
-- **Capacidade e geração escalam com Regência.**
-- Capstones (tier 10) também têm `delay` longo como segundo portão, no padrão do
-  `habilidades.cfg` atual.
+- A **interface de comando** básica (Atacar/Proteger/Recuar) é **livre**.
+- As **Ativas** das árvores custam **`stam + delay`**, no padrão do
+  `habilidades.cfg` atual (baixo nos tiers 1/3, alto + `delay` longo nos
+  capstones 7/10). As **Passivas** são de graça.
+- A *força* do que você dispara escala com **Regência**, não com um recurso
+  gasto.
+- Uma eventual **barra de combate universal** (vibe roguelike, igual pra todos os
+  combates, com flavor por vocação) está **parkada** como ideia de sistema — se
+  vier, encaixa por cima deste kit sem retrabalho.
 
 ---
 
@@ -89,13 +90,13 @@ fixado aqui é a **mecânica, o alvo e a intenção**.
 
 ### 🗡️ Ofensivo — *o proxy bate / burst*
 
-**O1 (nível 1) · Ativa · custo Comando baixo**
+**O1 (nível 1) · Ativa · custo stam baixo**
 Próximo ataque do proxy: **+dano e derruba** (knockdown curto).
 - *Vocal* — **Bote Dilacerante**: seu lobo dá um bote e derruba o alvo.
 - *Musical* — **Lâmina Giratória**: sua arma gira num arco e derruba o alvo.
 - *Profana* — **Investida Esmagadora**: seu morto avança e esmaga o alvo no chão.
 
-**O3 (nível 3) · Ativa · custo Comando baixo**
+**O3 (nível 3) · Ativa · custo stam baixo**
 **Investida** — o proxy fecha distância até o alvo e bate (gap-closer + dano).
 - *Vocal* — **Disparada**: a fera dispara sobre a presa.
 - *Musical* — **Arco Cortante**: a arma cruza o ar num talho.
@@ -107,7 +108,7 @@ abaixo de X% de vida**. (Sinergia direta com a árvore Defensiva.)
 - *Vocal* — **Instinto da Caça** · *Musical* — **Gume Afiado** · *Profana* —
   **Sede de Carniça**.
 
-**O7 (nível 7) · Ativa · custo Comando alto + delay**
+**O7 (nível 7) · Ativa · custo stam alto + delay**
 **Frenesi** — o proxy entra em frenesi: +velocidade de ataque e ataques extras
 por (Regência / N) segundos.
 - *Vocal* — **Fúria da Matilha** · *Musical* — **Staccato de Guerra** · *Profana*
@@ -121,13 +122,13 @@ persegue até matá-lo ou expirar. *(Minera a antiga "Caçador Implacável".)*
 
 ### 🛡️ Defensivo — *debuff = enfraquece o inimigo, logo te protege*
 
-**D1 (nível 1) · Ativa · custo Comando baixo**
+**D1 (nível 1) · Ativa · custo stam baixo**
 Inimigo recebe **medo**: −dano causado + chance de fuga/hesitação por Y seg.
 *(Minera a antiga "Inflingir Medo".)*
 - *Vocal* — **Rosnado Intimidante** · *Musical* — **Acorde Desmoralizante** ·
   *Profana* — **Inflingir Medo**.
 
-**D3 (nível 3) · Ativa · custo Comando baixo**
+**D3 (nível 3) · Ativa · custo stam baixo**
 **Quebra de Guarda** — alvo com **−resistência** por Y seg (abre pra dano).
 - *Vocal* — **Mordida Lacerante** · *Musical* — **Dissonância** · *Profana* —
   **Corrosão Profana**.
@@ -137,7 +138,7 @@ Inimigo recebe **medo**: −dano causado + chance de fuga/hesitação por Y seg.
 - *Vocal* — **Presença Selvagem** · *Musical* — **Réquiem** · *Profana* —
   **Aura de Pavor**.
 
-**D7 (nível 7) · Ativa · custo Comando médio**
+**D7 (nível 7) · Ativa · custo stam médio**
 **Agrilhoar** — o proxy prende o alvo: **root/slow** por Y seg (CC).
 - *Vocal* — **Encurralar** · *Musical* — **Nota Suspensa** · *Profana* —
   **Garras da Cova**.
@@ -149,7 +150,7 @@ Inimigo recebe **medo**: −dano causado + chance de fuga/hesitação por Y seg.
 
 ### ✨ Suporte — *buff no proxy / em si*
 
-**S1 (nível 1) · Ativa · custo Comando baixo**
+**S1 (nível 1) · Ativa · custo stam baixo**
 Proxy ganha **+X% de dano** por Y seg.
 - *Vocal* — **Uivo de Guerra** · *Musical* — **Marcha de Bravura** · *Profana* —
   **Aura Profana**.
@@ -167,7 +168,7 @@ Selvagem".)*
 - *Vocal* — **Despertar** · *Musical* — **Ressonância** · *Profana* — **Ascensão
   Profana**.
 
-**S7 (nível 7) · Ativa · custo Comando médio + delay**
+**S7 (nível 7) · Ativa · custo stam médio + delay**
 **Segundo Fôlego** — cura o proxy; se ele estiver morto, **reergue/reinvoca** com
 cooldown. É o botão de sobrevivência da pet-class.
 - *Vocal* — **Trato Selvagem** · *Musical* — **Refrão Restaurador** · *Profana* —
