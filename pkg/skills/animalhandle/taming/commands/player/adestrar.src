@@ -128,7 +128,7 @@ function TameLoop(who, targ, byref info)
 	var check := SkillCheck(who, "Taming", info.difficulty);
 	if ((check > 0) || (who.serial in ownerarray))
 		SendSysMessageEx(who, "" + targ.name + " parece ser seu amigo.", SSM_INFO);
-		AI_MoveXY(targ, info.x, NEMOVE_TOWARD, NEMOVE_WALK, WAKEUP, 1);
+		AI_MoveXY(targ, info.x, info.y, NEMOVE_TOWARD, NEMOVE_WALK, WAKEUP, 1);
 
 		return 1;
 	elseif (check < -15)

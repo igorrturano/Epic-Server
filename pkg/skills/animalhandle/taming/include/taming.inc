@@ -133,6 +133,13 @@ function _TallyPets(who)
 			continue;
 		endif
 		if ( pet.IsA(POLCLASS_CORPSE) || pet.master != who || GetObjProperty(pet, "summoned") )
+			// Pet stabled cujo master foi zerado por fluxo externo (destama,
+			// GoFeral, etc.) deixa StoredAnimal/stabled_pets orfaos. Limpa antes
+			// de retirar do array de quem nao e' mais dono.
+			if (IsStabled(pet) || IsInLimbo(pet))
+				ClearPetStableAndLimboState(pet);
+				OwnerClearPetRef(who, serial);
+			endif
 			tamed.erase(_serial_iter);
 			sleepms(2);
 			continue;
@@ -213,12 +220,18 @@ endfunction
 
 //deleta o serial da lista de seriais do char (quando o npc morre ou eh transferido)
 function ErasePet(who, myserial)
+	// MP_Unmount so' faz sentido se o pet sendo removido e' a montaria atual.
+	// Sem o guard, qualquer ErasePet (resgate, kill, libertar outro pet)
+	// derruba a montaria do jogador.
+	var was_mount := IsMountSerial(who, myserial);
 
 	var tamed := GetObjProperty(who, "TamedPets");
 	if ( tamed )
 		foreach serial in tamed
 			if ( myserial == serial )
-				MP_Unmount(who);
+				if (was_mount)
+					MP_Unmount(who);
+				endif
 				tamed.erase(_serial_iter);
 				SetObjProperty(who, "TamedPets", tamed);
 				who.followers := who.followers - 1;
@@ -233,7 +246,9 @@ function ErasePet(who, myserial)
 			if ( myserial == serial )
 				var pet := SystemFindObjectBySerial(serial);
 				TS_LowerDuration(pet, "summon", -1);
-				MP_Unmount(who);
+				if (was_mount)
+					MP_Unmount(who);
+				endif
 				tamed.erase(_serial_iter);
 				SetObjProperty(who, "SummonedPets", tamed);
 				var timer_num := GetObjProperty(pet, "slot");
@@ -269,8 +284,7 @@ function ClearPetStableAndLimboState(pet)
 
 	if (IsStabled(pet) || IsInLimbo(pet))
 		pet.setParalyzed(0);
-		RevokePrivilege(pet, "invul");
-		pet.disable("invul");
+		SetLimboInvul(pet, 0);
 		pet.hidden := 0;
 		pet.frozen := 0;
 	endif
@@ -356,15 +370,10 @@ endfunction
 
 //desloga os pets, teleportando eles pra um lugar l
 function LogoutPets(who)
-
-	var tamed := GetObjProperty(who, "TamedPets");
-	if ( !tamed )
-		return;
-	endif
-
-	foreach serial in tamed
-		var pet := SystemFindObjectBySerial(serial);
-		if ( (pet.master == who)  && (Distance(pet, who) < 3))
+	// GetActivePets filtra stabled/limbo — pets guardados ja estao parados
+	// (post ou 0,0,0) e nao devem ser teleportados para britannia_alt.
+	foreach pet in GetActivePets(who)
+		if (pet.master == who && Distance(pet, who) < 3)
 			pet.hidden := 1;
 			var location := array;
 			location.append(pet.x);
@@ -375,8 +384,6 @@ function LogoutPets(who)
 		endif
 		sleepms(2);
 	endforeach
-
-
 endfunction
 
 
@@ -386,29 +393,35 @@ endfunction
 
 //traz os pets pra proximo do dono.
 function LogonPets(who)
-
-	var tamed := GetObjProperty(who, "TamedPets");
-	if ( !tamed )
-		return;
-	endif
-
-	foreach serial in tamed
-		var pet := SystemFindObjectBySerial(serial);
-		if ( (pet.master == who)  )
-			pet.hidden := 0;
-			var location := GetObjProperty(pet, "previous_location");
-			MoveObjectToLocation(pet, location[1], location[2], location[3], pet.realm, MOVEOBJECT_FORCELOCATION);
-			EraseObjProperty(pet, "previous_location");
+	// So mexe em pets que LogoutPets escondeu (tem previous_location). Pets
+	// hidden por outro sistema (BeastCommand Recuar!, sneak, etc.) mantem
+	// o hidden — antes, LogonPets desbloqueava todo mundo no logon.
+	foreach pet in GetActivePets(who)
+		if (pet.master != who)
+			sleepms(2);
+			continue;
 		endif
+		var location := GetObjProperty(pet, "previous_location");
+		if (location == error || !location)
+			sleepms(2);
+			continue;
+		endif
+		pet.hidden := 0;
+		MoveObjectToLocation(pet, location[1], location[2], location[3], pet.realm, MOVEOBJECT_FORCELOCATION);
+		EraseObjProperty(pet, "previous_location");
 		sleepms(2);
 	endforeach
-
 endfunction
 
 //igual a untame que tem na IA :ghaia:tamed
 function destama(serial)
 
 	var me := SystemFindObjectBySerial(serial);
+	if (!PetIsValid(me))
+		return;
+	endif
+	// Captura owner antes de zerar a prop, para limpar refs do StableData dele.
+	var owner_serial := CInt(GetObjProperty(me, "owner"));
 	me.SetMaster(0);
 	var orig_script := GetObjProperty(me, "script");
 	me.script := orig_script;
@@ -422,6 +435,16 @@ function destama(serial)
 	EraseObjProperty(me, "NeverRelease");
 	EraseObjProperty(me, "Fidelizar?");
 	EraseObjProperty(me, "Cruzar");
+	// Limpa estabulo/limbo do pet e refs do owner (post antigo, stabled_pets,
+	// limbo_pet). Cobre paths como fimcontrolarmortovivo que chamam destama
+	// sem passar antes por ExitStable/ReleaseAsWild.
+	ClearPetStableAndLimboState(me);
+	if (owner_serial)
+		var old_owner := SystemFindObjectBySerial(owner_serial);
+		if (PetIsValid(old_owner))
+			OwnerClearPetRef(old_owner, serial);
+		endif
+	endif
 	RestartScript(me);
 	ErasePetMods(me);
 endfunction
@@ -480,8 +503,24 @@ function ErasePetMods(pet)
 endfunction
 
 function RessuscitarPet(corpse, owner, is_bandage := 0)
+    // Se o corpse herdou StableData (pet morreu stabled/limbo), limpa as
+    // refs do owner e do post antes de ressuscitar — senao stabled_pets/
+    // StoredAnimal apontam pro serial do corpse que vai ser destruido.
+    var corpse_stable := GetObjProperty(corpse, "StableData");
+    if (corpse_stable != error && CInt(corpse_stable["post"]))
+        var old_post := SystemFindObjectBySerial(CInt(corpse_stable["post"]));
+        if (old_post && CInt(GetObjProperty(old_post, "StoredAnimal")) == corpse.serial)
+            EraseObjProperty(old_post, "StoredAnimal");
+        endif
+        if (owner)
+            OwnerClearPetRef(owner, corpse.serial);
+        endif
+    endif
+
     var npc := CreateNpcFromTemplate(GetObjProperty(corpse, "npctemplate"), corpse.x, corpse.y, corpse.z, 0, corpse.realm);
+    ClearPetStable(npc);
     CopyPropsPet(corpse, npc);
+    ClearPetStable(npc);
     var corpse_parsed := corpse.name[10, len(corpse.name)-9];
     npc.script := ":epicai:tamedBrain";
     RestartScript(npc);

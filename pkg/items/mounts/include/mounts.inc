@@ -354,6 +354,16 @@ endfunction
  * Returns the restored npc.
  *
  */
+// Retorna 1 se serial e' o pet atualmente montado. Use para gatear chamadas
+// a MP_Unmount em fluxos que iteram pets do dono (ErasePet, kill em massa).
+function IsMountSerial(mobile, serial)
+	var mount_piece := GetEquipmentByLayer(mobile, LAYER_MOUNT);
+	if (!mount_piece)
+		return 0;
+	endif
+	return CInt(GetObjProperty(mount_piece, "serial")) == CInt(serial);
+endfunction
+
 function MP_Unmount(mobile)
 	var mount_piece := GetEquipmentByLayer(mobile, LAYER_MOUNT);
 

@@ -387,7 +387,17 @@ program NPCMonitor()
 
 			SYSEVENT_DAMAGED:
 				if (!following && !fighting)
-					FightADV(ev.source);
+					var attacker := ev.source;
+					// Pet de player presente e acessivel: responsabiliza o dono
+					// (pet e' instrumento). Se o dono ja' nao esta' disponivel
+					// (morto/oculto/longe), revida o pet diretamente.
+					if (attacker.master && !attacker.master.IsA(POLCLASS_NPC)
+						&& !attacker.master.dead && !attacker.master.hidden
+						&& Distance(me, attacker.master) <= 15)
+						FightADV(attacker.master);
+					else
+						FightADV(attacker);
+					endif
 				endif
 				break;
 			HELP_CMD:
@@ -884,13 +894,34 @@ function FightADV(opponent := 0)
 			AddReport(guild, "{} bateu em {} ate desmaiar".format(me.name, fighting.name));
 		endif
 		var hostiles := ListHostiles(me, 8, LH_FLAG_LOS);
-		if (!hostiles[1])
+		// Prefere alvo "primario" (player/NPC sem master) sobre pet de player.
+		// Pet so' vira alvo se nenhum primario sobrar — evita guarda mirar no
+		// pet quando o dono ainda esta' presente, mas mantem defesa quando o
+		// dono sumiu e o pet continua batendo.
+		var preferred := 0;
+		var pet_fallback := 0;
+		foreach h in hostiles
+			if (!h || h == error)
+				continue;
+			endif
+			if (h.master && !h.master.IsA(POLCLASS_NPC))
+				if (!pet_fallback)
+					pet_fallback := h;
+				endif
+			else
+				preferred := h;
+				break;
+			endif
+		endforeach
+		if (preferred)
+			fighting := preferred;
+		elseif (pet_fallback)
+			fighting := pet_fallback;
+		else
 			fighting := 0;
 			SetOpponent(0);
 			SetWarMode(0);
 			return;
-		else
-			fighting := hostiles[1];
 		endif
 	endif
 

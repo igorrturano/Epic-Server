@@ -4,6 +4,8 @@ use npc;
 use math;
 use util;
 
+include ":stables:include/stable";
+
 const RUN_DISTANCE := 8;
 const RUN_TIMEOUT_SECONDS := 5;
 
@@ -21,9 +23,11 @@ program SendPetToLimbo(params)
 
 	MoveObjectToLocation(pet, 0, 0, 0, pet.realm, MOVEOBJECT_FORCELOCATION);
 
-	pet.hidden := 1;
+	// EnterLimbo ja aplicou hidden+invul sincronamente. Aqui aplicamos os
+	// flags que so' fazem sentido depois do RunPetAwayFrom (frozen impede
+	// movimento, paralyzed bloqueia acoes do brain).
 	pet.frozen := 1;
-	pet.invul := 1;
+	pet.setParalyzed(1);
 endprogram
 
 function RunPetAwayFrom(pet, owner)

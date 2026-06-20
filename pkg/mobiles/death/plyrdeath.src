@@ -21,6 +21,7 @@ include ":commands:possess";
 include ":death:resurrection";
 include ":tn:cooldown";
 include ":disguise:incognito";
+include ":killlog:include/killlog";
 
 program core_chrDeath(params)
 	var corpse := params[1];
@@ -33,9 +34,14 @@ program core_chrDeath(params)
 			WakeUp(ghost, corpse);
 			unpossess(ghost);
 			ApplyRawDamage(oldnpc, 9999);
+			// Possessor desencarnando — npcdeath do oldnpc ja loga a morte.
+			// NAO chamar LogPlayerDeath aqui (gerava registro duplo).
 			return 1;
 		endif
 	endif
+
+	// Morte real do jogador. ghost ainda tem nome/acctname/dados_convite canonicos.
+	LogPlayerDeath(ghost);
 
 	SetObjProperty(corpse, "url", GetObjProperty(corpse, "old_url")); // Ajuste no portrait
 

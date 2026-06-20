@@ -10,7 +10,9 @@ include ":stables:include/stable";
 include "include/say";
 
 program StablePost(who, post)
-	if (GetObjProperty(post, "StoredAnimal"))
+	// CInt: prop ausente retorna error truthy. Sem isto, post virgem
+	// despacha para ResgatarAnimal e o jogador nunca consegue guardar a 1a vez.
+	if (CInt(GetObjProperty(post, "StoredAnimal")))
 		return ResgatarAnimal(who, post);
 	else
 		return GuardarAnimal(who, post);
@@ -20,8 +22,18 @@ endprogram
 function GuardarAnimal(who, post)
 	var current_post := OwnerPostSerial(who);
 	if (current_post && current_post != post.serial)
-		SendSysMessage(who, "Voce ja esta usando outro poste de estabulo!");
-		return 0;
+		// Permitir trocar de poste se nao ha pets stabled/limbo no anterior.
+		// ExitStable mantem owner.post para permitir RestageStable, mas isso
+		// nao deve impedir usar outro estabulo se nao ha pet preso la.
+		var data := GetOwnerStable(who);
+		if (data != error && data["stabled_pets"].size() == 0 && !CInt(data["limbo_pet"]))
+			data["post"] := 0;
+			SetOwnerStable(who, data);
+			current_post := 0;
+		else
+			SendSysMessage(who, "Voce ja esta usando outro poste de estabulo!");
+			return 0;
+		endif
 	endif
 
 	var animals := ListMobilesNearLocation(who.x, who.y, who.z, 3, who.realm);
@@ -177,7 +189,7 @@ function ResgatarAnimal(who, post)
 		TeleportarPetPerto(animal, who);
 		Start_Script(":fezes:scripts/defecador", array{animal});
 		GetNumPets(who);
-		SendSysMessage(who, "Contrato rescindido. " + animal.name + " foi liberado.");
+		SendSysMessage(who, "Contrato rescindido. " + animal.name + " saiu do estábulo.");
 		return 1;
 	endif
 

@@ -40,20 +40,7 @@ program TamingSkill(who)
 		return;
 	endif
 
-	// checar se já tem animal fidelizado
-	var check_bond := 0;
-	var petsi := GetObjProperty(who, "TamedPets");
-	var habs := MobileWrapper(who).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM);
-	foreach serial in petsi
-		var pety := SystemFindObjectBySerial(serial);
-		if (GetObjProperty(pety, "bond") == "fiel")
-			if (!habs)
-				check_bond := 1;
-			else
-				check_bond := 2;
-			endif
-		endif
-	endforeach
+	var check_bond := DetectBondState(who);
 
 	var yn_gump := GFECreateGump("Menu de Trato de Animais", 275, 305);
 
@@ -79,38 +66,34 @@ program TamingSkill(who)
 	GFTextLine(yn_gump, 210, 270, 1153, "Cruzar?");
 
 	var y := 150;
-	var i := 1;
-	var pets := GetObjProperty(who, "TamedPets");
+	var pets := SafeGetTamedPets(who);
+	// slot_index incrementa em TODA entrada do array original: botao de
+	// libertar usa pets[input-100] e precisa do indice na ordem original.
+	var slot_index := 1;
+	var guardados := 0;
 	foreach serial in pets
 		var pet := SystemFindObjectBySerial(serial);
-		var text_fiel := "";
-		if (GetObjProperty(pet, "bond") == "fiel")
-			text_fiel := " *fiel*";
-			GFTextLine(yn_gump, 40, y, 0xf7, "" + pet.name + text_fiel);
-		else
-			GFTextLine(yn_gump, 40, y, 1153, "" + pet.name);
-			if (GetObjProperty(pet, "Fidelizar?") == "nao")
-				GFGumpPic(yn_gump, 190, y + 4, 2437);
-				GFToolTipText(yn_gump, "NÃO para fidelizar");
-			elseif (GetObjProperty(pet, "Fidelizar?") == "sim")
-				GFGumpPic(yn_gump, 190, y + 4, 2436);
-				GFToolTipText(yn_gump, "SIM para fidelizar");
-			endif
+		if (!PetIsValid(pet))
+			ErasePet(who, serial);
+			slot_index := slot_index + 1;
+			continue;
 		endif
-		// Cruzar
-		//GFResizePic(byref gump, x, y, gump_id, width:=0, height:=0)
-		if (GetObjProperty(pet, "Cruzar") == "nao")
-			GFGumpPic(yn_gump, 215, y + 4, 5019);
-			GFToolTipText(yn_gump, "NÃO permitido para cruzar");
-		elseif (GetObjProperty(pet, "Cruzar") == "sim")
-
+		// Pets stabled/limbo nao aparecem aqui — gerenciados pelo post/.assoviar.
+		if (IsStabled(pet) || IsInLimbo(pet))
+			guardados := guardados + 1;
+			slot_index := slot_index + 1;
+			continue;
 		endif
-		if (!GetObjProperty(pet, "summoned"))
-			GFAddButton(yn_gump, 20, y + 4, 2103, 2104, GF_CLOSE_BTN, (100 + i));
-		endif
-		i := i + 1;
+		RenderPetRow(yn_gump, pet, y, slot_index);
+		slot_index := slot_index + 1;
 		y := y + 20;
 	endforeach
+	// Sem nenhum pet ativo renderizado mas com pets guardados: informa o jogador
+	// para nao parecer que perdeu tudo.
+	if (y == 150 && guardados > 0)
+		GFTextLine(yn_gump, 25, y, 33, "Seus animais estão guardados.");
+		GFTextLine(yn_gump, 25, y + 14, 1153, "Use o poste do estábulo ou .assoviar.");
+	endif
 
 	var input := GFSendGump(who, yn_gump);
 	input := input[0];
@@ -122,54 +105,136 @@ program TamingSkill(who)
 	elseif (input == 3)
 		Teach(who);
 	elseif (input > 100)
-		SendSysMessageEx(who, "Você libertou seu animal.", SSM_INFO);
-		ErasePet(who, pets[input - 100]);
-		destama(pets[input - 100]);
-	elseif (input == 4) // botão para poder fidelizar
-		SendSysMessageEx(who, "Qual pet você quer poder fidelizar? OBS: O processo será resetado para qualquer outro pet com fidelização iniciada!",
-				   SSM_INFO);
-		var targx := target(who);
-		if (GetObjProperty(targx, "owner") != who.serial)
-			SendSysMessageEx(who, "Esse animal não lhe pertence!", SSM_FAIL);
-			return;
+		// Guard contra gump stale: cliente pode reenviar input fora do range
+		// se TamedPets mudou apos abrir o menu.
+		var idx := input - 100;
+		if (idx > 0 && idx <= pets.size())
+			SendSysMessageEx(who, "Você libertou seu animal.", SSM_INFO);
+			ErasePet(who, pets[idx]);
+			destama(pets[idx]);
 		endif
-		// resetar os demais para "nao" e deixa só o selecionado como "sim"
-		var pets_all := GetObjProperty(who, "TamedPets");
-		var habs := MobileWrapper(who).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM);
-		foreach serial in pets_all
-			var pet_each := SystemFindObjectBySerial(serial);
-			if (habs && GetObjProperty(pet_each, "bond") == "fiel")
-			else
-				SetObjProperty(pet_each, "Fidelizar?", "nao");
-				EraseObjProperty(pet_each, "bond");
-			endif
-		endforeach
-		SetObjProperty(targx, "Fidelizar?", "sim");
-		SendSysmessage(who, "" + targx.name + " pode ser fidelizado, todos os demais agora não");
-elseif (input == 5) // botão cruzar (toggle livre)
-	SendSysMessageEx(who, "Selecione o pet para ativar/desativar cruzamento.", SSM_INFO);
-
-	var targx := target(who);
-
-	if (GetObjProperty(targx, "owner") != who.serial)
-		SendSysMessageEx(who, "Esse animal não lhe pertence!", SSM_FAIL);
-		return;
+	elseif (input == 4) // Fidelizar
+		PromptFidelizar(who);
+	elseif (input == 5) // Cruzar (toggle)
+		PromptCruzar(who);
 	endif
 
-	var estado := GetObjProperty(targx, "Cruzar");
+	EraseObjProperty(who, "#medding");
+endprogram
 
-	if (estado == "sim")
+// -----------------------------------------------------------------------------
+// Menu helpers
+// -----------------------------------------------------------------------------
+
+// TamedPets pode ser error (personagem sem prop). Garante array iteravel.
+function SafeGetTamedPets(who)
+	var pets := GetObjProperty(who, "TamedPets");
+	if (pets == error || !pets)
+		return array;
+	endif
+	return pets;
+endfunction
+
+// Verifica se algum pet do dono e' fiel. Retorna:
+//   0 = nenhum fiel
+//   1 = tem fiel mas dono sem ESPREITA_SELVAGEM (esconde botao Fidelizar)
+//   2 = tem fiel e dono com ESPREITA_SELVAGEM (mostra botao)
+function DetectBondState(who)
+	var pets := SafeGetTamedPets(who);
+	var has_espreita := MobileWrapper(who).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM);
+	foreach serial in pets
+		var pet := SystemFindObjectBySerial(serial);
+		if (PetIsValid(pet) && GetObjProperty(pet, "bond") == "fiel")
+			return has_espreita ? 2 : 1;
+		endif
+	endforeach
+	return 0;
+endfunction
+
+// Renderiza uma linha do menu para um pet valido (nome, badges, botao libertar).
+function RenderPetRow(byref gump, pet, y, slot_index)
+	if (GetObjProperty(pet, "bond") == "fiel")
+		GFTextLine(gump, 40, y, 0xf7, "" + pet.name + " *fiel*");
+	else
+		GFTextLine(gump, 40, y, 1153, "" + pet.name);
+		var fidelizar := GetObjProperty(pet, "Fidelizar?");
+		if (fidelizar == "nao")
+			GFGumpPic(gump, 190, y + 4, 2437);
+			GFToolTipText(gump, "NÃO para fidelizar");
+		elseif (fidelizar == "sim")
+			GFGumpPic(gump, 190, y + 4, 2436);
+			GFToolTipText(gump, "SIM para fidelizar");
+		endif
+	endif
+
+	var cruzar := GetObjProperty(pet, "Cruzar");
+	if (cruzar == "nao")
+		GFGumpPic(gump, 215, y + 4, 5019);
+		GFToolTipText(gump, "NÃO permitido para cruzar");
+	elseif (cruzar == "sim")
+		GFGumpPic(gump, 215, y + 4, 2436);
+		GFToolTipText(gump, "Permitido para cruzar");
+	endif
+
+	// Pets summoned nao podem ser libertados (sao temporarios).
+	if (!PropTruthy(pet, "summoned"))
+		GFAddButton(gump, 20, y + 4, 2103, 2104, GF_CLOSE_BTN, (100 + slot_index));
+	endif
+endfunction
+
+// Pede target de pet ao jogador. Cancelamento, tipo invalido, ownership
+// invalida — todos retornam error com mensagem ja exibida. Caller faz guard.
+function RequestPetTarget(who, prompt_msg)
+	SendSysMessageEx(who, prompt_msg, SSM_INFO);
+	var t := target(who);
+	if (!PetIsValid(t))
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return error;
+	endif
+	if (!t.IsA(POLCLASS_NPC) || !IsTamedPet(t) || GetObjProperty(t, "owner") != who.serial)
+		SendSysMessageEx(who, "Esse animal não lhe pertence!", SSM_FAIL);
+		return error;
+	endif
+	return t;
+endfunction
+
+function PromptFidelizar(who)
+	var targx := RequestPetTarget(who,
+		"Qual pet você quer poder fidelizar? OBS: O processo será resetado para qualquer outro pet com fidelização iniciada!");
+	if (targx == error)
+		return;
+	endif
+	// Reseta Fidelizar?/bond em todos os outros pets. Fieis sao preservados
+	// independente de ESPREITA_SELVAGEM no dono.
+	var pets := SafeGetTamedPets(who);
+	foreach serial in pets
+		var pet := SystemFindObjectBySerial(serial);
+		if (!PetIsValid(pet))
+			continue;
+		endif
+		if (GetObjProperty(pet, "bond") == "fiel")
+			continue;
+		endif
+		SetObjProperty(pet, "Fidelizar?", "nao");
+		EraseObjProperty(pet, "bond");
+	endforeach
+	SetObjProperty(targx, "Fidelizar?", "sim");
+	SendSysmessage(who, "" + targx.name + " pode ser fidelizado, todos os demais agora não");
+endfunction
+
+function PromptCruzar(who)
+	var targx := RequestPetTarget(who, "Selecione o pet para ativar/desativar cruzamento.");
+	if (targx == error)
+		return;
+	endif
+	if (GetObjProperty(targx, "Cruzar") == "sim")
 		SetObjProperty(targx, "Cruzar", "nao");
 		SendSysMessage(who, "" + targx.name + " agora NÃO pode cruzar.");
 	else
 		SetObjProperty(targx, "Cruzar", "sim");
 		SendSysMessage(who, "" + targx.name + " agora pode cruzar.");
 	endif
-
-	endif
-
-	EraseObjProperty(who, "#medding");
-endprogram
+endfunction
 
 function tamecreature(who)
 
@@ -183,9 +248,13 @@ function tamecreature(who)
 	endif
 	var targ := target(who);
 
+	if (!PetIsValid(targ))
+		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+		return;
+	endif
+
 	var skill := EffectiveSkill(who, "Taming");
 
-	var bonus := 0;
 	if (!targ.IsA(POLCLASS_NPC))
 		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
 		return;
@@ -217,6 +286,8 @@ function tamecreature(who)
 	var info := struct;
 	info.+x := who.x;
 	info.+y := who.y;
+	info.+z := who.z;
+	info.+realm := who.realm;
 	info.+facing := who.facing;
 	info.+difficulty := tameDifficulty;
 	if (info.difficulty > (skill + 15))
@@ -242,7 +313,7 @@ function tamecreature(who)
 			SetObjProperty(targ, "Fidelizar?", "nao");
 			SetObjproperty(targ, "Cruzar", "nao");
 			SetObjproperty(targ, "Original_serial", targ.serial);
-			if (GetObjProperty(targ, "descmodboss"))
+			if (PropTruthy(targ, "descmodboss"))
 				EraseObjProperty(targ, "descmodboss");
 				SetObjProperty(targ, "Sexo", 0);
 			endif
@@ -285,11 +356,11 @@ function TameLoop(who, targ, byref info)
 		SendSysMessageEx(who, "Você não pode adestrar " + targ.name + " enquanto está sendo atacado",
 				   SSM_FAIL);
 		return 0;
-	elseif ((who.x != info.x) || (who.y != info.y) || (who.facing != info.facing))
+	elseif ((who.x != info.x) || (who.y != info.y) || (who.z != info.z) || (who.realm != info.realm) || (who.facing != info.facing))
 		SendSysMessageEx(who, "Você desviou sua atenção.", SSM_FAIL);
 		return 0;
 	elseif (Distance(who, targ) > 2)
-		SendSysMessageEx(who, "Voêe está muito longe.", SSM_FAIL);
+		SendSysMessageEx(who, "Você está muito longe.", SSM_FAIL);
 		return 0;
 	endif
 
@@ -302,7 +373,7 @@ function TameLoop(who, targ, byref info)
 	var check := SkillCheck(who, "Taming", info.difficulty);
 	if ((check > 0) || (who.serial in ownerarray))
 		SendSysMessageEx(who, "" + targ.name + " parece ser seu amigo.", SSM_INFO);
-		AI_MoveXY(targ, info.x, NEMOVE_TOWARD, NEMOVE_WALK, WAKEUP, 1);
+		AI_MoveXY(targ, info.x, info.y, NEMOVE_TOWARD, NEMOVE_WALK, WAKEUP, 1);
 
 		return 1;
 	elseif (check < -15)
@@ -330,26 +401,22 @@ function Teach(who)
 
 	SendSysMessage(who, "Selecione a criatura que você deseja treinar.");
 	var creature := Target(who, TGTOPT_CHECK_LOS);
-	var instincts := GetObjProperty(creature, "instincts");
-	var bond := (Getobjproperty(creature, "bond") == "fiel");
-	if (!bond)
-		SendSysMessage(who, "Esse animal não é fiel a você, conquiste a confiança dele primeiro!", 0,
-						32);
+	if (!PetIsValid(creature))
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
 		return;
 	endif
-
-	if (GetObjProperty(creature, "Blocked") || creature.frozen)
+	if (GetObjProperty(creature, "bond") != "fiel")
+		SendSysMessage(who, "Esse animal não é fiel a você, conquiste a confiança dele primeiro!", 0, 32);
+		return;
+	endif
+	if (PropTruthy(creature, "Blocked") || creature.frozen)
 		SendSysMessage(who, "O raciocínio por trás da sua análise está incorreto.");
 		return 0;
 	endif
-
-	var advance_flags;
-	if (IsTamedPet(creature))
-		TeachGump(who, creature);
-	else
+	if (!IsTamedPet(creature))
 		return 0;
 	endif
-
+	TeachGump(who, creature);
 endfunction
 
 function TeachGump(who, creature)
@@ -479,16 +546,10 @@ function BuildInstincts(who, creature, byref gump, ins_elem, byref y_pos)
 		GFAddButton(gump, 27, y_pos + 163, 1209, 1210, GF_PAGE_BTN, det_pagex);
 
 		y_pos := y_pos + 20;
-	else
-		if (!MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DE_FERAS))
-			GFTextLine(gump, 170, 154, 1890, "Você não tem a ");
-			GFTextLine(gump, 170, 166, 1890, "habilidade necessária.");
-			y_pos := y_pos + 10;
-		elseif (!MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DE_FERAS))
-			GFTextLine(gump, 27, 334, 1890, "Você não tem a ");
-			GFTextLine(gump, 27, 346, 1890, "habilidade necessária.");
-		endif
 	endif
+	// Antes havia um `else` com dois elseifs identicos checando
+	// !HasAbility(MESTRE_DE_FERAS) — ambos inalcancaveis porque Teach ja gateia
+	// a entrada com a mesma habilidade. Removido como dead code.
 
 	return 1;
 endfunction
@@ -496,6 +557,13 @@ endfunction
 function BuildDetails(byref gump, ins_name, byref y_pos)
 
 	var cfg_elem := info_cfg[ins_name];
+
+	// Validar descricao ANTES de emitir pagina/botoes. Antes, instintos sem
+	// Desc no cfg geravam pagina vazia com botao "Ensinar" orfao acessivel.
+	var desc := GetConfigStringArray(cfg_elem, "Desc");
+	if (desc.Size() < 1)
+		return 0;
+	endif
 
 	GFPage(gump, det_page);
 	GFAddButton(gump, 80, 44, 2223, 2223, GF_PAGE_BTN, 1);
@@ -508,11 +576,6 @@ function BuildDetails(byref gump, ins_name, byref y_pos)
 		GFTextLine(gump, 200, 55, 0, "Descrição");
 		GFTextLine(gump, 210, 200, 0, "Ensinar");
 		GFAddButton(gump, 221, y_pos + 95, 1209, 1210, GF_CLOSE_BTN, btn_maxId);
-	endif
-
-	var desc := GetConfigStringArray(cfg_elem, "Desc");
-	if (desc.Size() < 1) // se não tiver descrição não aparece nada
-		return 0;
 	endif
 
 	foreach line in desc // identificar se é instinto natural ou selvagem para aparecer a descrição da hab
@@ -556,7 +619,7 @@ function TeachNow(who, tamed, ins)
 	else
 	endif
 
-	if (!instincts)
+	if (instincts == error || TypeOf(instincts) != "Dictionary")
 		instincts := dictionary;
 	endif
 
@@ -610,7 +673,12 @@ function TeachNow(who, tamed, ins)
 		// return;
 		// endif
 		endif
-		SendSysMessageEX(who, "Você despertou a natureza com sucesso.", SSM_INFO);
+		// Mensagem segue groupa: Sentidos Agucados e' Group=2 mas critic=0.
+		if (groupa == 2)
+			SendSysMessageEX(who, "Você despertou o instinto com sucesso.", SSM_INFO);
+		else
+			SendSysMessageEX(who, "Você despertou a natureza com sucesso.", SSM_INFO);
+		endif
 	else
 		SetObjProperty(tamed, "Critic", critic); // Aqui define os criticos do instinto selvagem, TO DO -> script de criticos para definir essas habs
 		SendSysMessageEX(who, "Você despertou o instinto com sucesso.", SSM_INFO);

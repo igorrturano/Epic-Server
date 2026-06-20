@@ -5,6 +5,7 @@ include ":message:model/Message";
 include ":tn:cooldown";
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
+include ":stables:include/stable";
 include "include/eventID";
 include "include/utils";
 include "include/say";
@@ -126,14 +127,10 @@ endfunction
 
 function _GetPets(who)
 	var pets := array{};
-	var tamed := GetObjProperty(who, "TamedPets");
-	if (!tamed)
-		return pets;
-	endif
-
-	foreach serial in tamed
-		var pet := SystemFindObjectBySerial(serial);
-		if (pet && pet.master == who && !pet.dead && !GetObjProperty(pet, "summoned") && Distance(who, pet) <= 12)
+	// GetActivePets ja filtra stabled/limbo — pet guardado nao deve receber
+	// comando de habilidade do cacador.
+	foreach pet in GetActivePets(who)
+		if (pet.master == who && !pet.dead && !GetObjProperty(pet, "summoned") && Distance(who, pet) <= 12)
 			pets.append(pet);
 		endif
 	endforeach
