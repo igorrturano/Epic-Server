@@ -1,0 +1,17 @@
+// Cron de pruning do killlog. Roda em loop infinito apagando registros com
+// mais de KILLLOG_RETENTION_DAYS dias. Iniciado automaticamente pelo POL na
+// inicializacao via :start:start.cfg.
+use uo;
+use os;
+
+include ":killlog:include/killlog";
+
+const SLEEP_INTERVAL := 86400; // 1 dia em segundos
+
+program killlog_prune()
+	set_script_option(SCRIPTOPT_NO_INTERRUPT, 1);
+	while (1)
+		sleep(SLEEP_INTERVAL);
+		KillLog_Prune(KILLLOG_RETENTION_DAYS);
+	endwhile
+endprogram

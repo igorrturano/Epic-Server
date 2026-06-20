@@ -1,0 +1,255 @@
+use uo;
+use os;
+use util;
+
+include ":gumps:epicGumps";
+include ":killlog:include/killlog";
+
+const PAGE_SIZE := 15;
+
+const HUE_LABEL := 33;
+const HUE_TEXT  := 1153;
+
+const BTN_NPC_FACCAO  := 10;
+const BTN_PET         := 11;
+const BTN_MONTARIA    := 12;
+const BTN_JOGADOR     := 13;
+const BTN_WINDOW_1D   := 20;
+const BTN_WINDOW_7D   := 21;
+const BTN_WINDOW_30D  := 22;
+const BTN_PREV_PAGE   := 30;
+const BTN_NEXT_PAGE   := 31;
+const BTN_DETAIL_BASE := 1000;
+const BTN_GOTO        := 200;
+
+program textcmd_causadamorte(who, args := "")
+	if (who.cmdlevel < 2)
+		SendSysMessage(who, "Comando restrito.");
+		return;
+	endif
+
+	if (Lower(CStr(args)) == "clear")
+		var n := KillLog_Prune(0);
+		SendSysMessage(who, "killlog: " + n + " registros apagados.");
+		return;
+	endif
+
+	// Roda prune oportunisticamente (1x por dia, guard interno).
+	KillLog_PruneIfNeeded();
+
+	var state := struct;
+	state.+victim_type := VICTIM_NPC_FACCAO;
+	state.+window_days := 7;
+	state.+page := 1;
+
+	while (state)
+		state := ShowList(who, state);
+	endwhile
+endprogram
+
+function LabelTipo(vtype)
+	if (vtype == VICTIM_NPC_FACCAO) return "NPCs de Faccao"; endif
+	if (vtype == VICTIM_PET)        return "Animais Domesticados"; endif
+	if (vtype == VICTIM_MONTARIA)   return "Montarias"; endif
+	if (vtype == VICTIM_JOGADOR)    return "Jogadores"; endif
+	return "(?" + CStr(vtype) + ")";
+endfunction
+
+function FormatTime(when)
+	var delta := polcore().systime - CInt(when);
+	if (delta < 0) delta := 0; endif
+	var d := CInt(delta / 86400);
+	var h := CInt((delta % 86400) / 3600);
+	var m := CInt((delta % 3600) / 60);
+	if (d > 0) return d + "d " + h + "h atras"; endif
+	if (h > 0) return h + "h " + m + "m atras"; endif
+	return m + "m atras";
+endfunction
+
+function FormatVictim(rec)
+	var s := CStr(rec.victim_name);
+	if (CStr(rec.owner_name) != "")
+		s := s + " (" + CStr(rec.owner_name) + ")";
+	endif
+	if (CStr(rec.guild_name) != "")
+		s := s + " <" + CStr(rec.guild_name) + ">";
+	endif
+	return s;
+endfunction
+
+function FormatKiller(rec)
+	if (CStr(rec.killer_name) == "")
+		return "(desconhecido)";
+	endif
+	var s := CStr(rec.killer_name);
+	if (CInt(rec.killer_master_serial))
+		s := s + " [" + CStr(rec.killer_master_name) + "]";
+	endif
+	return s;
+endfunction
+
+function BuildFilters(state)
+	var f := dictionary;
+	f["victim_type"] := state.victim_type;
+	f["from_time"] := polcore().systime - (CInt(state.window_days) * 86400);
+	return f;
+endfunction
+
+function ShowList(who, state)
+	var records := KillLog_Query(BuildFilters(state));
+	var total := records.size();
+	var total_pages := CInt((total + PAGE_SIZE - 1) / PAGE_SIZE);
+	if (total_pages < 1) total_pages := 1; endif
+	if (CInt(state.page) > total_pages) state.page := total_pages; endif
+	if (CInt(state.page) < 1) state.page := 1; endif
+
+	var gump := GFECreateGump("Causa da Morte — " + LabelTipo(state.victim_type), 720, 540);
+
+	// Linha de abas
+	var ay := 50;
+	GFAddButton(gump, 20,  ay, 2117, 2118, GF_CLOSE_BTN, BTN_NPC_FACCAO);
+	GFTextLine(gump, 42,  ay, HUE_TEXT, "NPCs Faccao");
+	GFAddButton(gump, 150, ay, 2117, 2118, GF_CLOSE_BTN, BTN_PET);
+	GFTextLine(gump, 172, ay, HUE_TEXT, "Pets");
+	GFAddButton(gump, 240, ay, 2117, 2118, GF_CLOSE_BTN, BTN_MONTARIA);
+	GFTextLine(gump, 262, ay, HUE_TEXT, "Montarias");
+	GFAddButton(gump, 370, ay, 2117, 2118, GF_CLOSE_BTN, BTN_JOGADOR);
+	GFTextLine(gump, 392, ay, HUE_TEXT, "Jogadores");
+
+	// Janela de tempo
+	GFTextLine(gump, 510, ay, HUE_LABEL, "Janela:");
+	GFAddButton(gump, 565, ay, 2117, 2118, GF_CLOSE_BTN, BTN_WINDOW_1D);
+	GFTextLine(gump, 587, ay, (state.window_days == 1)  ? HUE_LABEL : HUE_TEXT, "1d");
+	GFAddButton(gump, 615, ay, 2117, 2118, GF_CLOSE_BTN, BTN_WINDOW_7D);
+	GFTextLine(gump, 637, ay, (state.window_days == 7)  ? HUE_LABEL : HUE_TEXT, "7d");
+	GFAddButton(gump, 665, ay, 2117, 2118, GF_CLOSE_BTN, BTN_WINDOW_30D);
+	GFTextLine(gump, 687, ay, (state.window_days == 30) ? HUE_LABEL : HUE_TEXT, "30d");
+
+	// Cabecalho
+	GFTextLine(gump, 25,  90, HUE_LABEL, "Quando");
+	GFTextLine(gump, 140, 90, HUE_LABEL, "Vítima (dono / guild)");
+	GFTextLine(gump, 460, 90, HUE_LABEL, "Killer [master]");
+
+	// Linhas
+	var start_idx := (CInt(state.page) - 1) * PAGE_SIZE + 1;
+	var end_idx := start_idx + PAGE_SIZE - 1;
+	if (end_idx > total) end_idx := total; endif
+
+	var y := 110;
+	for i := start_idx to end_idx
+		var rec := records[i];
+		GFAddButton(gump, 20, y, 2103, 2104, GF_CLOSE_BTN, BTN_DETAIL_BASE + i);
+		GFTextLine(gump, 45,  y, HUE_TEXT, FormatTime(rec.when));
+		GFTextLine(gump, 140, y, HUE_TEXT, FormatVictim(rec));
+		GFTextLine(gump, 460, y, HUE_TEXT, FormatKiller(rec));
+		y := y + 22;
+		sleepms(2);
+	endfor
+
+	// Paginacao
+	GFTextLine(gump, 25, 460, HUE_LABEL, "Total: " + total + " | Pagina " + state.page + "/" + total_pages);
+	if (state.page > 1)
+		GFAddButton(gump, 250, 460, 2117, 2118, GF_CLOSE_BTN, BTN_PREV_PAGE);
+		GFTextLine(gump, 272, 460, HUE_TEXT, "Anterior");
+	endif
+	if (state.page < total_pages)
+		GFAddButton(gump, 350, 460, 2117, 2118, GF_CLOSE_BTN, BTN_NEXT_PAGE);
+		GFTextLine(gump, 372, 460, HUE_TEXT, "Proxima");
+	endif
+
+	var input := GFSendGump(who, gump);
+	return HandleListInput(who, state, records, input[0]);
+endfunction
+
+function HandleListInput(who, state, records, btn)
+	if (btn == 0)                  return 0; endif
+	if (btn == BTN_NPC_FACCAO)     state.victim_type := VICTIM_NPC_FACCAO; state.page := 1; return state; endif
+	if (btn == BTN_PET)            state.victim_type := VICTIM_PET;        state.page := 1; return state; endif
+	if (btn == BTN_MONTARIA)       state.victim_type := VICTIM_MONTARIA;   state.page := 1; return state; endif
+	if (btn == BTN_JOGADOR)        state.victim_type := VICTIM_JOGADOR;    state.page := 1; return state; endif
+	if (btn == BTN_WINDOW_1D)      state.window_days := 1;  state.page := 1; return state; endif
+	if (btn == BTN_WINDOW_7D)      state.window_days := 7;  state.page := 1; return state; endif
+	if (btn == BTN_WINDOW_30D)     state.window_days := 30; state.page := 1; return state; endif
+	if (btn == BTN_PREV_PAGE)      state.page := state.page - 1; return state; endif
+	if (btn == BTN_NEXT_PAGE)      state.page := state.page + 1; return state; endif
+
+	if (btn >= BTN_DETAIL_BASE)
+		var idx := btn - BTN_DETAIL_BASE;
+		if (idx > 0 && idx <= records.size())
+			ShowDetail(who, records[idx]);
+		endif
+	endif
+	return state;
+endfunction
+
+// Helper: 1 linha key-value no detail gump. byref y avanca 22px por chamada.
+function Field(byref gump, byref y, label, value)
+	GFTextLine(gump, 25,  y, HUE_LABEL, label);
+	GFTextLine(gump, 160, y, HUE_TEXT,  CStr(value));
+	y := y + 22;
+endfunction
+
+// Variante que so' renderiza se o valor nao for vazio.
+function OptionalField(byref gump, byref y, label, value)
+	if (CStr(value) != "")
+		Field(gump, y, label, value);
+	endif
+endfunction
+
+function ShowDetail(who, rec)
+	var gump := GFECreateGump("Detalhe — " + CStr(rec.victim_name), 520, 520);
+	var y := 50;
+
+	Field(gump, y, "Quando:",    FormatTime(rec.when) + " (epoch " + CStr(rec.when) + ")");
+	Field(gump, y, "Tipo:",      LabelTipo(rec.victim_type));
+	Field(gump, y, "Vítima:",    CStr(rec.victim_name) + " [serial " + CStr(rec.victim_serial) + "]");
+	OptionalField(gump, y, "Template:",     rec.victim_template);
+	OptionalField(gump, y, "Nome inicial:", rec.victim_nome_inicial);
+	OptionalField(gump, y, "Nome RP:",      rec.victim_nome_personalizado);
+	OptionalField(gump, y, "Conta vítima:", rec.victim_acctname);
+
+	if (CInt(rec.owner_serial))
+		Field(gump, y, "Dono:", CStr(rec.owner_name) + " [" + CStr(rec.owner_serial) + "]");
+		OptionalField(gump, y, "Conta dono:", rec.owner_acctname);
+	endif
+	if (CStr(rec.guild_name) != "")
+		Field(gump, y, "Guild:", CStr(rec.guild_name) + " [" + CStr(rec.guild_serial) + "]");
+	endif
+
+	y := y + 10;
+	if (CInt(rec.killer_serial))
+		Field(gump, y, "Killer:", CStr(rec.killer_name) + " [" + CStr(rec.killer_serial) + "]");
+		if (CInt(rec.killer_is_npc))
+			Field(gump, y, "Killer tipo:", "NPC — " + CStr(rec.killer_template));
+			if (CInt(rec.killer_master_serial))
+				Field(gump, y, "Mestre do killer:", CStr(rec.killer_master_name) + " [" + CStr(rec.killer_master_serial) + "]");
+				OptionalField(gump, y, "Conta mestre:", rec.killer_master_acctname);
+			endif
+		else
+			OptionalField(gump, y, "Nome inicial:", rec.killer_nome_inicial);
+			OptionalField(gump, y, "Nome RP:",      rec.killer_nome_personalizado);
+			if (CStr(rec.killer_acctname) != "")
+				Field(gump, y, "Conta killer:", CStr(rec.killer_acctname) + " (cmdlevel " + CStr(rec.killer_cmdlevel) + ")");
+			endif
+		endif
+	else
+		Field(gump, y, "Killer:", "(desconhecido)");
+	endif
+
+	y := y + 10;
+	Field(gump, y, "Local:", CStr(rec.x) + ", " + CStr(rec.y) + ", " + CStr(rec.z) + " (" + CStr(rec.realm) + ")");
+
+	GFAddButton(gump, 25, 460, 2117, 2118, GF_CLOSE_BTN, BTN_GOTO);
+	GFTextLine(gump, 50, 460, HUE_TEXT, "Ir ao local da morte");
+
+	var input := GFSendGump(who, gump);
+	if (input[0] == BTN_GOTO)
+		var realm := CStr(rec.realm);
+		if (realm == "" || realm == "error")
+			SendSysMessage(who, "Realm invalido no registro.");
+			return;
+		endif
+		MoveObjectToLocation(who, CInt(rec.x), CInt(rec.y), CInt(rec.z), realm, MOVEOBJECT_FORCELOCATION);
+		SendSysMessage(who, "Teleportado para o local da morte.");
+	endif
+endfunction
