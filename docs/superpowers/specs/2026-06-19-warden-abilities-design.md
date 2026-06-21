@@ -25,6 +25,9 @@ Joga como o Marcial: 3 troncos, escolhe 1 por nível, build emerge.
 
 ## Fundamentos
 
+- **Special ability da classe: Comunhão com a Natureza** — concedida na criação
+  (hotbar, não pick de árvore): acessa as formas/magia da terra do seu dialeto +
+  rastreio/sobrevivência.
 - **Fonte = Nature** (trava as 5 fontes em ≤1, princípio do doc).
 - **Predador é agnóstico de arma.** A caça (marcar/rastrear/+dano no marcado) vale
   igual melee ou arco — **não compete** com o Arqueiro do Marcial, que é sobre *o

@@ -30,6 +30,8 @@ A **religião** pinta a face de tudo (como a cultura faz no Warden).
 
 ## Fundamentos (a fundação travada)
 
+- **Special ability da classe: Conjuração Divina** — concedida na criação
+  (hotbar, não pick de árvore): recebe o livro de magia divina + Casting.
 - **Fonte = Theology.** Trava as 5 fontes em ≤1.
 - **Casting gradua o círculo.** É a skill de *acertar* da magia (ex-`Magery` —
   **renomear pra `Casting`** é desejável, é neutro de fonte; rename é refactor

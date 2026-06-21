@@ -33,6 +33,12 @@ dentro da sua regência — nunca como combo mecânico (Regência trava em 1, pr
 
 ## Backbone (concedido pela vocação na criação — todas as regências)
 
+**Special ability da classe: Reger** — concedida na criação, vai pra hotbar (como
+o ataque especial do guerreiro), **não é pick de árvore** (picks começam no nível
+2). É *erguer/domar/empunhar e comandar seu proxy*: **Erguer** (Profana) ·
+**Domar** (Vocal) · **Empunhar** (Musical). Garantida — todo Encantador precisa do
+proxy, então a identidade não se esconde atrás de escolha.
+
 Não é árvore; é a base que existe antes de qualquer pick:
 
 - **1 proxy, sempre 1.** Segunda trava anti-OP, além de Regência ser fonte ≤1.

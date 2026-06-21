@@ -25,6 +25,8 @@ espada, arco ou punho. *Menos é mais.*
 
 ## Fundamentos (o que trava o Marcial)
 
+- **Special ability da classe: Ataques Especiais** — concedida na criação
+  (hotbar, não pick de árvore): os golpes especiais de arma.
 - **Fonte = Tactics**, fora da Radiância — nunca usa Casting nem trava fontes.
 - **Habilidades agnósticas de arma.** A regra: cada habilidade é **agnóstica**
   (funciona com qualquer arma), com **face por arma** só onde a expressão muda de

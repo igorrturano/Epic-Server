@@ -25,6 +25,8 @@ reorganizados dos kits que já existem; escolhe 1 por nível, build emerge.
 
 ## Fundamentos (o que trava o Ladino)
 
+- **Special ability da classe: Evasão** — concedida na criação (hotbar, não pick
+  de árvore): a evasão + maestria de furtividade.
 - **Fonte = Stealth.** É a "fonte" do Furtivo, mas fica **fora da Radiância** —
   não trava as 5 fontes mágicas e **nunca usa Casting**. Por isso o Ladino
   coexiste com veneno (Alchemy cívica), Theft, etc. sem tocar em magia.

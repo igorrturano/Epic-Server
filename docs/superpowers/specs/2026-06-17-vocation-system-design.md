@@ -145,6 +145,26 @@ e o Guardião depende dela); renomear `Beastmastery` → `Regência`.
 
 ---
 
+## Special ability da classe (a assinatura, dada na criação)
+
+Cada vocação nasce com **uma special ability** — a capacidade-assinatura que
+define a classe. É **concedida na criação**, vai pra **hotbar** (o mesmo sistema
+de special abilities que já existe: ataque especial, evasão, conjuração rápida) e
+**não é pick de árvore** (os picks só começam no nível 2). É como a identidade não
+se esconde atrás de escolha.
+
+| Vocação | Special ability | Status |
+| --- | --- | --- |
+| **Marcial** | **Ataques Especiais** (golpes de arma) | já existe |
+| **Ladino** | **Evasão** (+ maestria de furtividade) | já existe |
+| **Arcanista** | **Conjuração Arcana** (recebe livro de magia + Casting) | já existe |
+| **Devoto** | **Conjuração Divina** (livro divino + Casting) | já existe |
+| **Warden** | **Comunhão com a Natureza** (formas/magia da terra do dialeto + rastreio) | novo |
+| **Alquimista** | **Engenhoca** (monta dispositivos de Ciência por medidor de engenharia) | novo |
+| **Encantador** | **Reger** (erguer/domar/empunhar e comandar 1 proxy) | novo |
+
+---
+
 ## As 7 vocações (e o destino das 30 antigas)
 
 *(6 detalhadas abaixo; a 7ª — Encantador — tem seção própria logo após.)*

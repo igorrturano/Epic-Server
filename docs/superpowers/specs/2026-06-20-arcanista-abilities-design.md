@@ -22,6 +22,8 @@ trabalho inteiro). Como o Devoto, é de **dois andares**:
 
 ## Fundamentos
 
+- **Special ability da classe: Conjuração Arcana** — concedida na criação
+  (hotbar, não pick de árvore): recebe o livro de magia + Casting.
 - **Fonte = Arcana + Casting.** Caster pleno (2 skills mágicas, princípio 4).
 - **Arcana PAGA o penalty de armadura** (regra source-based): magia arcana precisa
   de gesto livre. O Arcanista é **SAD — paga em fragilidade** (HP die menor,
