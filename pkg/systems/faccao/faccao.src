@@ -21,6 +21,7 @@ include ":gumps:yesNo";
 include ":merchants:item_template";
 include ":gumps:htmlGump";
 include ":keys:key";
+include ":faccao:include/aluguelporta";
 
 const BUTTON_BUY_UNIFORM := 0x2;
 const BUTTON_ADD_PLAYER := 0x3;
@@ -725,6 +726,7 @@ function guildHandler(who, input)
 				options.append("Remover Fechadura");
 				options.append("Trocar Fechadura");
 				options.append("Tornar Alugavel");
+				options.append("Selecionar Inquilino");
 				options.append("Desfazer Alugavel");
 			else
 				options.append("Adicionar Fechadura");
@@ -778,10 +780,71 @@ function guildHandler(who, input)
 				DestroyItem(fechadura);
 				SendSysMessageEx(who, "Voce instalou a fechadura com sucesso.", SSM_INFO);
 			elseif (output["Tornar"])
-				// SetObjProperty(targ, "Alugavel", 1);
-				return SendSysMessageEx(who, "Sistema em construao");
+				if (!ref_key)
+					return SendSysMessageEx(who, "A porta precisa de fechadura antes de virar alugavel.", SSM_FAIL);
+				endif
+				var rent_name := cstr(RequestGump(who, "Qual o nome do quarto?"));
+				if (!rent_name || rent_name == "")
+					return SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+				endif
+				var rent_value := cint(RequestGump(who, "Aluguel semanal em moedas de cobre?", 0, 1));
+				if (rent_value <= 0)
+					return SendSysMessageEx(who, "Valor invalido.", SSM_FAIL);
+				endif
+				SetObjProperty(targ, "Alugavel", 1);
+				SetObjProperty(targ, "RentName", rent_name);
+				SetObjProperty(targ, "RentValue", rent_value);
+				SetObjProperty(targ, "RentGuildSerial", guild.guildid);
+				SetObjProperty(targ, "RentInquilino", 0);
+				SetObjProperty(targ, "RentData", 0);
+				FaccaoAlugavel_AddDoor(targ.serial);
+				SendSysMessageEx(who, "Porta marcada como alugavel: '" + rent_name + "' por " +
+									 rent_value + " moedas/semana.", SSM_INFO);
+			elseif (output["Selecionar"])
+				if (!CInt(GetObjProperty(targ, "Alugavel")))
+					return SendSysMessageEx(who, "A porta nao esta marcada como alugavel.", SSM_FAIL);
+				endif
+				if (CInt(GetObjProperty(targ, "RentInquilino")) > 0)
+					return SendSysMessageEx(who, "A porta ja tem inquilino. Use 'Desfazer Alugavel' antes.", SSM_FAIL);
+				endif
+				SendSysMessageEx(who, "Selecione o jogador que sera o inquilino.", SSM_REQUEST);
+				var candidato := Target(who);
+				if (!candidato)
+					return SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+				endif
+				if (!candidato.isA(POLCLASS_MOBILE) || candidato.npctemplate)
+					return SendSysMessageEx(who, "Selecione um jogador.", SSM_FAIL);
+				endif
+				if (candidato.serial == who.serial)
+					return SendSysMessageEx(who, "Voce nao pode ser inquilino de si mesmo.", SSM_FAIL);
+				endif
+				if (!candidato.connected)
+					return SendSysMessageEx(who, "O jogador precisa estar online.", SSM_FAIL);
+				endif
+				if (FaccaoAlugavel_FindInquilinoDoor(candidato.serial))
+					return SendSysMessageEx(who, candidato.name + " ja e inquilino de outra porta.", SSM_FAIL);
+				endif
+				Start_Script(":faccao:aluguelporta_oferta",
+							 array{ targ.serial, who.serial, candidato.serial });
+				SendSysMessageEx(who, "Oferta enviada a " + candidato.name + ".", SSM_INFO);
 			elseif (output["Desfazer"])
+				var inq_serial := CInt(GetObjProperty(targ, "RentInquilino"));
+				if (inq_serial > 0)
+					// Rotaciona LockId — invalida a chave do ex-inquilino.
+					FaccaoAlugavel_RotateLockId(targ);
+					var ex := SystemFindObjectBySerial(inq_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+					if (ex != error && ex.connected)
+						SendSysMessageEx(ex, "Seu aluguel foi cancelado pelo lider.", SSM_HARMFUL);
+					endif
+				endif
 				EraseObjProperty(targ, "Alugavel");
+				EraseObjProperty(targ, "RentName");
+				EraseObjProperty(targ, "RentValue");
+				EraseObjProperty(targ, "RentGuildSerial");
+				EraseObjProperty(targ, "RentInquilino");
+				EraseObjProperty(targ, "RentData");
+				FaccaoAlugavel_RemoveDoor(targ.serial);
+				SendSysMessageEx(who, "Aluguel desfeito. Use 'Copiar chave' se precisar de acesso.", SSM_INFO);
 			endif
 	endif
 /* elseif (input == BUTTON_BUY_UNIFORM)
