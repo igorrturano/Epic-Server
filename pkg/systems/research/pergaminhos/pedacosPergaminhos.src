@@ -194,8 +194,12 @@ function CriarPergaminho(who, tipo)
 	if (ConfirmarCriacaoPergaminho(who, tipo, nivel))
 		var escola := "";
 		if (tipo == TIPO_PERGAMINHO_MAGIA)
-			escola := SelecionarEscolaMagia(who);
-			if (!escola) return; endif
+			while (1)
+				escola := SelecionarEscolaMagia(who);
+				if (!escola) return; endif
+				if (SchoolHasSpellsAtCircle(escola, nivel)) break; endif
+				SendSysMessage(who, "A escola " + escola + " não possui magias de nível " + nivel + ". Escolha outra escola.");
+			endwhile
 		endif
 
 		PrintTextAbove(who, "*Juntando as folhas*");
