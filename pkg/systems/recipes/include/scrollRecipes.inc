@@ -452,6 +452,27 @@ function GetSpellScrollObjtype(level)
     return SCROLL_SPELL[level];
 endfunction
 
+// Returns 1 if the school has at least one spellcaster spell at the given
+// circle, 0 otherwise. Used by the folhas-soltas flow to pre-validate the
+// school choice before consuming pieces — Kaijin (necromancy) has no Circle
+// 4/5 spells, so without this check the player would silently fall back to a
+// random spell from another school.
+function SchoolHasSpellsAtCircle(school, circle)
+    foreach cfg_path in (GetMageSchoolConfigPaths())
+        var spellcfg := ReadConfigFile(cfg_path);
+        if (!spellcfg) continue; endif
+        foreach key in (GetConfigIntKeys(spellcfg))
+            var elem := FindConfigElem(spellcfg, key);
+            if (GetConfigString(elem, "Type") != "spellcaster") continue; endif
+            if (GetConfigInt(elem, "Circle") != circle) continue; endif
+            if (GetConfigString(elem, "School") == school)
+                return 1;
+            endif
+        endforeach
+    endforeach
+    return 0;
+endfunction
+
 // Assigns a spell from a specific school to a spell scroll item.
 // Falls back to AssignSpellRecipe if no spells found for that school.
 function AssignSpellRecipeBySchool(item, school)
