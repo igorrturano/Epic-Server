@@ -345,9 +345,7 @@ function RemoveDiseaseEffects(mobile)
 	if (regen_mod)
 		var current_stamina_mod := AP_GetVitalRegenRateMod(mobile, "Stamina");
 		var current_mana_mod := AP_GetVitalRegenRateMod(mobile, "Mana");
-		AP_SetVitalRegenRateMod(mobile, "Stamina", current_stamina_mod(regen_mod));
-		AP_SetVitalRegenRateMod(mobile, "Mana", current_mana_mod(regen_mod));
-	// Remover mod de regeneração se implementado
-	// UpdateDiseaseProperty(mobile, "RegenDiseaseMod", 0);
+		AP_SetVitalRegenRateMod(mobile, "Stamina", current_stamina_mod - regen_mod);
+		AP_SetVitalRegenRateMod(mobile, "Mana", current_mana_mod - regen_mod);
 	endif
 endfunction
