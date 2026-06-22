@@ -93,7 +93,7 @@ function Defecate(who)
     SetObjProperty(fezes, "#fezes", 1);
 
     var nome_prop := GetObjProperty(who, "nome_inicial");
-    var nome := (!nome_prop.errortext && CStr(nome_prop) != "0") ? CStr(nome_prop) : CStr(who.name);
+    var nome := (nome_prop != error && CStr(nome_prop) != "" && CStr(nome_prop) != "0") ? CStr(nome_prop) : CStr(who.name);
     PrintTextAbove(who, "*" + nome + " defeca no chao*");
     return 1;
 endfunction
