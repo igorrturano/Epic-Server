@@ -222,7 +222,7 @@ program faccao(params)
 	GFResizePic(gump, 48, 67, 9350, 172, 326); // members background
 	GFTextLine(gump, 100, 70, 0, "Membros");
 
-	var leader_name := GetMemberDisplayName(guild_leader, use_member_alias);
+	var leader_name := GetMemberDisplayName(guild_leader, use_member_alias, guild);
 	if (!leader_name)
 		leader_name := "";
 	elseif (who.cmdlevel || aboveguild)
@@ -235,7 +235,7 @@ program faccao(params)
 		if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
 			GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER + mob.serial);
 		endif
-		GFTextLine(gump, 67, y - 2, 0, "{}".format(GetMemberDisplayName(mob, use_member_alias)));
+		GFTextLine(gump, 67, y - 2, 0, "{}".format(GetMemberDisplayName(mob, use_member_alias, guild)));
 		var permissions := guild.GetProp(cstr(mob.serial));
 		var permission_text := "";
 		foreach priv in (permissions.keys())
@@ -259,7 +259,7 @@ program faccao(params)
 			if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
 				GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER + mob.serial);
 			endif
-			var hon_name := GetMemberDisplayName(mob, use_member_alias);
+			var hon_name := GetMemberDisplayName(mob, use_member_alias, guild);
 			if (is_gm_or_leader && hon_name) hon_name := hon_name + " [Hon]"; endif
 			GFTextLine(gump, 67, y - 2, 0, "{}".format(hon_name));
 			GFToolTipText(gump, "Membro Honorário");
@@ -1039,7 +1039,7 @@ function playerHandler(who, input)
 	elseif (output["Mudar Tipo"])
 		_MudarTipoMembroHandler(who, player);
 	elseif (output["Apelido"])
-		_MudarApelidoHandler(who, player);
+		_MudarApelidoHandler(who, player, guild);
 	endif
 
 endfunction
@@ -1047,8 +1047,10 @@ endfunction
 // -------------------------------------------------------
 // Permite ao líder alterar o "apelido" (nome_personalizado em dados_convite)
 // de um membro — o nome exibido no mural. Não mexe em cargo_rp.
+// `guild` é a faccao do mural aberto (pode != who.guild quando GM edita
+// outra faccao via BUTTON_GM_OPTS).
 // -------------------------------------------------------
-function _MudarApelidoHandler(who, targ)
+function _MudarApelidoHandler(who, targ, guild)
 	if (!targ)
 		return SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
 	endif
@@ -1077,6 +1079,18 @@ function _MudarApelidoHandler(who, targ)
 		"data_convite"       := (dados_antigos && dados_antigos != error && dados_antigos.data_convite) ? dados_antigos.data_convite : POLCore().systime,
 		"convidado_por"      := (dados_antigos && dados_antigos != error && dados_antigos.convidado_por) ? dados_antigos.convidado_por : who.serial
 	});
+
+	// Espelha em guild.aliases — fonte da verdade no mural, imune a convidador
+	// deletado ou a troca de faccao do alvo (ver _ResolveRPName em faccao.src).
+	// Padrão "load-or-create" igual ao usado em pkg/commands/player/r.src para
+	// o dict "conhecidos": dict.errortext em dict valido retorna truthy, entao
+	// nao serve como sentinela aqui.
+	if (guild)
+		var aliases := guild.GetProp("aliases");
+		if (aliases == error || !aliases) aliases := dictionary{}; endif
+		aliases[CStr(targ.serial)] := nome;
+		guild.SetProp("aliases", aliases);
+	endif
 
 	SendSysMessageEx(who, "Apelido de " + targ.name + " alterado para: " + nome, SSM_INFO);
 	if (targ.connected)
@@ -2348,25 +2362,37 @@ endfunction
 //   NUNCA exibir nome_inicial (nome OOC do char)
 //   NUNCA exibir acctname (nome da conta — OOC, vaza login)
 //
-// Cadeia de fallback:
-//   1. dados_convite.nome_personalizado (preenchido na Mesa/Pergaminho — IDEAL)
-//   2. Apelido que o convidador deu ao convidado via .r (conhecidos[serial])
-//   3. "Membro Desconhecido" (ultimo recurso, sem vazar OOC)
-function GetMemberDisplayName(mob, use_alias := 0)
+// Cadeia de fallback (ordem de prioridade):
+//   1. guild.aliases[serial] — dict da propria faccao, imune a convidador
+//      deletado, populado em _MudarApelidoHandler. Mata o bug recorrente.
+//   2. dados_convite.nome_personalizado (preenchido na Mesa/Pergaminho)
+//   3. Apelido que o convidador deu ao convidado via .r (conhecidos[serial])
+//   4. "Membro Desconhecido" (ultimo recurso, sem vazar OOC)
+function GetMemberDisplayName(mob, use_alias := 0, guild := 0)
 	if (!mob) return ""; endif
 	if (use_alias == 1 || use_alias == 2)
-		return _ResolveRPName(mob);
+		return _ResolveRPName(mob, guild);
 	endif
 	return mob.name;
 endfunction
 
-function _ResolveRPName(mob)
+function _ResolveRPName(mob, guild := 0)
+	// PRIORIDADE 1: alias setado pela propria faccao (independe de convidador)
+	if (guild)
+		var aliases := guild.GetProp("aliases");
+		if (aliases != error && aliases)
+			var alias_guild := aliases[CStr(mob.serial)];
+			if (alias_guild != error && alias_guild != "") return alias_guild; endif
+		endif
+	endif
+
 	var dados := GetObjProperty(mob, "dados_convite");
 	if (dados && !dados.errortext)
+		// PRIORIDADE 2: nome RP que o proprio jogador definiu na Mesa/Pergaminho
 		var nome_rp := dados.nome_personalizado;
 		if (nome_rp && !nome_rp.errortext && nome_rp != "") return nome_rp; endif
 
-		// Fallback: apelido (.r) que o convidador deu ao convidado
+		// PRIORIDADE 3: apelido (.r) que o convidador deu ao convidado
 		var convidador_serial := dados.convidado_por;
 		if (convidador_serial)
 			var convidador := SystemFindObjectBySerial(convidador_serial,

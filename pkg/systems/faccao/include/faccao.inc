@@ -444,6 +444,16 @@ function RemMember(faccao, mobile)
    if (!mobile.isA(POLCLASS_MOBILE))
       mobile := SystemFindObjectBySerial(mobile, SYSFIND_SEARCH_OFFLINE_MOBILES);
    endif
+   // Limpa alias da faccao para o membro que esta saindo — evita que o nome
+   // de RP usado nesta faccao "vaze" se ele entrar em outra.
+   var aliases := faccao.GetProp("aliases");
+   if (aliases != error && aliases)
+      var key := CStr(mobile.serial);
+      if (aliases.exists(key))
+         aliases.erase(key);
+         faccao.SetProp("aliases", aliases);
+      endif
+   endif
    if (IsHonoraryMember(faccao, mobile))
       _RemHonoraryMember(faccao, mobile);
    else
