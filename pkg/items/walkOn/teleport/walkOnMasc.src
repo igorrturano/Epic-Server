@@ -13,7 +13,7 @@ program walkOn(mobile, tile)
 		return 0;
 	endif
 	if (GetObjProperty(mobile, "faccao") == "Rufioes")
-		var pets := ListPetsNear(mobile, 4);
+		var pets := ListAllPetsAndSummonedPetsNear(mobile, 4);
 		var hostiles := ListHostiles(mobile, 4);
 		var dest := GetObjProperty(tile, "Destination");
 
