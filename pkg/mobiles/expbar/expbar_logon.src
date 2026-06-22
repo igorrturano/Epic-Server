@@ -3,5 +3,12 @@ include ":expbar:expbar";
 program expbar_logon(who)
     sleep(1); // Wait for logon processes to complete
     UpdateXPClient(who);
+    // Reconciliacao one-shot: chars antigos que perderam pergaminhos no
+    // bug do LevelUp em burst recebem agora. Guardado por flag, roda
+    // exatamente uma vez por personagem.
+    ReconciliarPergaminhos(who);
+    // Retoma entrega de qualquer pergaminho pendente — recem-adicionado
+    // pela reconciliacao ou que ficou pendente em sessao anterior.
+    EntregarPergaminhosPendentes(who);
     return 1;
 endprogram

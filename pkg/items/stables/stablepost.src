@@ -106,7 +106,7 @@ function ResgatarAnimal(who, post)
 	// pode forcar a rescisao.
 	if (animal.master != who || animal.dead)
 		if (!is_contract_owner)
-			SendSysMessage(who, "Este animal nao pertence a voce.");
+			SendSysMessage(who, "Outro tratador ja utiliza esse poste para seu animal. Busque outro poste ou compre um para voce.");
 			return 0;
 		endif
 		var motivo := animal.dead ? "morto" : "liberado";

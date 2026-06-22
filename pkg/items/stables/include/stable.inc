@@ -434,6 +434,16 @@ function FindSpawnLocationNearby(character)
 		if (Abs(z - character.z) > 10)
 			continue;
 		endif
+		// Rejeita pontos sem linha de visao para o dono (atras de parede): o
+		// pet nasceria preso e o walk_event nunca conseguiria traze-lo de volta.
+		if (!CheckLosAt(character, x, y, z))
+			continue;
+		endif
+		// Confirma que da pra dar o primeiro passo do ponto em direcao ao dono
+		// (rejeita tiles bloqueados/encurralados). "L" = movimento terrestre.
+		if (CanWalk("L", x, y, z, character.x, character.y) == error)
+			continue;
+		endif
 		return struct{ x := x, y := y, z := z };
 	endwhile
 	return struct{ x := character.x, y := character.y, z := character.z };

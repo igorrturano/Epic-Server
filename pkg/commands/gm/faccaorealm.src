@@ -1,0 +1,192 @@
+// .faccaorealm — diagnostico de realm/area para NPCs de faccao.
+// Targeta um NPC guarda/mercador da faccao e mostra:
+//   * realm/xyz do NPC
+//   * guildid e nome da guild associada
+//   * realm salvo da guild (raw) e realm efetivo (com fallback de inferencia)
+//   * rects em "area" e quais cobrem a posicao atual
+//   * territories controlados, com Realm/Rect de cada um e se cobrem o NPC
+//   * resultado de inGuildRect (padding 0 e 4)
+//   * se EnforceGuildRealm teleportaria o NPC agora
+use uo;
+use os;
+use basic;
+use util;
+use guilds;
+use cfgfile;
+use datafile;
+
+include ":faccao:faccao";
+include ":architect:include/architect";
+
+program faccao_realm_diag(who)
+    if (!who.cmdlevel)
+        return;
+    endif
+
+    SendSysMessage(who, "Selecione o NPC de faccao para diagnostico...", 66);
+    var npc := Target(who, TGTOPT_NOCHECK_LOS);
+    if (!npc)
+        return SendSysMessage(who, "Cancelado.", 33);
+    elseif (!npc.isA(POLCLASS_MOBILE))
+        return SendSysMessage(who, "Alvo nao e um mobile.", 33);
+    endif
+
+    SendSysMessage(who, "=== FACCAO REALM DIAG ===", 90);
+    SendSysMessage(who, "NPC: {} (serial 0x{})".format(npc.name, Hex(npc.serial)), 66);
+    SendSysMessage(who, "  xyz = ({}, {}, {})  realm = '{}'".format(npc.x, npc.y, npc.z, npc.realm), 66);
+
+    var guildid := GetObjProperty(npc, "guild");
+    if (!guildid || guildid == error)
+        SendSysMessage(who, "ERRO: NPC sem property 'guild' — nao e NPC de faccao.", 33);
+        return;
+    endif
+    SendSysMessage(who, "  prop 'guild' = '{}'".format(guildid), 66);
+
+    var guild := FindGuild(guildid);
+    if (!guild)
+        SendSysMessage(who, "ERRO: FindGuild({}) retornou vazio. Guild deletada?".format(guildid), 33);
+        return;
+    endif
+
+    var gname := guild.GetProp("name");
+    SendSysMessage(who, "Guild: '{}' (guildid {})".format(gname, guild.guildid), 66);
+
+    // --- Realm raw vs efetivo ---
+    var saved_realm := guild.GetProp("realm");
+    var saved_str := "(vazio)";
+    if (saved_realm && typeof(saved_realm) == "String" && saved_realm != "")
+        saved_str := "'{}'".format(saved_realm);
+    endif
+    SendSysMessage(who, "  guild.GetProp('realm') = {}".format(saved_str), 66);
+
+    // GetGuildRealm persiste o resultado se ainda nao tiver — avisar usuario
+    var eff_realm := GetGuildRealm(guild);
+    SendSysMessage(who, "  GetGuildRealm() efetivo = '{}'".format(eff_realm), 66);
+
+    if (eff_realm == npc.realm)
+        SendSysMessage(who, "  -> match com npc.realm OK", 66);
+    else
+        SendSysMessage(who, "  -> MISMATCH: guild.realm '{}' != npc.realm '{}'".format(eff_realm, npc.realm), 33);
+    endif
+
+    // --- Areas (rects diretos na guild) ---
+    var area := guild.GetProp("area");
+    var area_count := 0;
+    if (area && area != error)
+        area_count := area.size();
+    endif
+    SendSysMessage(who, "AREAS (guild.area): {} rect(s)".format(area_count), 90);
+
+    var matched_area := 0;
+    if (area_count > 0)
+        var idx := 1;
+        foreach rect in area
+            if (rect && rect.size() >= 4)
+                var r := NormalizeRect(cint(rect[1]), cint(rect[2]), cint(rect[3]), cint(rect[4]));
+                var inside_0 := (npc.x >= r.x1 && npc.x <= r.x2 && npc.y >= r.y1 && npc.y <= r.y2);
+                var inside_4 := (npc.x >= r.x1 - 4 && npc.x <= r.x2 + 4 && npc.y >= r.y1 - 4 && npc.y <= r.y2 + 4);
+                var tag := inside_0 ? "DENTRO" : (inside_4 ? "borda(<=4)" : "FORA");
+                var color := inside_0 ? 66 : (inside_4 ? 53 : 33);
+                SendSysMessage(who, "  [{}] ({},{}) -> ({},{}) : {}".format(idx, r.x1, r.y1, r.x2, r.y2, tag), color);
+                if (inside_0 || inside_4) matched_area := 1; endif
+            else
+                SendSysMessage(who, "  [{}] INVALIDO (size<4)".format(idx), 33);
+            endif
+            idx := idx + 1;
+            sleepms(2);
+        endforeach
+    endif
+
+    // --- Territories ---
+    var territories := guild.GetProp("territories");
+    var terr_count := 0;
+    if (territories && territories != error)
+        terr_count := territories.size();
+    endif
+    SendSysMessage(who, "TERRITORIES: {} territorio(s)".format(terr_count), 90);
+
+    var matched_terr := 0;
+    if (terr_count > 0)
+        var rect_df := OpenDataFile(":architect:areas");
+        if (!rect_df)
+            SendSysMessage(who, "  ERRO: nao consegui abrir :architect:areas", 33);
+        else
+            foreach territory in territories
+                sleepms(2);
+                var elem := rect_df.FindElement(territory);
+                if (!elem)
+                    SendSysMessage(who, "  '{}' : nao encontrado em :architect:areas".format(territory), 33);
+                    continue;
+                endif
+                var t_faction := elem.GetProp("Faction");
+                var t_realm := elem.GetProp("Realm");
+                var t_rect_str := elem.GetProp("Rect");
+                var faction_ok := (t_faction == gname);
+                var realm_ok := (t_realm == npc.realm);
+
+                SendSysMessage(who, "  '{}' Faction='{}' Realm='{}' Rect='{}'".format(territory, t_faction, t_realm, t_rect_str), 66);
+
+                if (!faction_ok)
+                    SendSysMessage(who, "    -> Faction mismatch (esperava '{}')".format(gname), 33);
+                endif
+                if (!realm_ok)
+                    SendSysMessage(who, "    -> Realm mismatch com npc.realm '{}'".format(npc.realm), 33);
+                endif
+
+                var parsed := ParseRect(t_rect_str);
+                if (!parsed)
+                    SendSysMessage(who, "    -> Rect invalido (ParseRect falhou)", 33);
+                    continue;
+                endif
+                var r := NormalizeRect(parsed.x1, parsed.y1, parsed.x2, parsed.y2);
+                var inside_0 := (npc.x >= r.x1 && npc.x <= r.x2 && npc.y >= r.y1 && npc.y <= r.y2);
+                var inside_4 := (npc.x >= r.x1 - 4 && npc.x <= r.x2 + 4 && npc.y >= r.y1 - 4 && npc.y <= r.y2 + 4);
+                if (inside_0)
+                    SendSysMessage(who, "    -> NPC DENTRO do rect (xy)", 66);
+                elseif (inside_4)
+                    SendSysMessage(who, "    -> NPC na borda do rect (<=4)", 53);
+                else
+                    SendSysMessage(who, "    -> NPC FORA do rect (xy)", 33);
+                endif
+
+                if ((inside_0 || inside_4) && faction_ok && realm_ok)
+                    matched_terr := 1;
+                endif
+            endforeach
+        endif
+    endif
+
+    // --- Resultado de inGuildRect ---
+    var igr_0 := inGuildRect(guild, npc, 0);
+    var igr_4 := inGuildRect(guild, npc, 4);
+    SendSysMessage(who, "inGuildRect(guild, npc, 0) = {}".format(igr_0 ? "TRUE" : "FALSE"), igr_0 ? 66 : 33);
+    SendSysMessage(who, "inGuildRect(guild, npc, 4) = {}".format(igr_4 ? "TRUE" : "FALSE"), igr_4 ? 66 : 33);
+
+    // --- EnforceGuildRealm simulation ---
+    if (eff_realm && npc.realm != eff_realm)
+        SendSysMessage(who, "EnforceGuildRealm: TELEPORTARIA (npc.realm != guild.realm)", 33);
+        var center := GetGuildCenter(guild, npc.z);
+        if (center)
+            SendSysMessage(who, "  destino: ({}, {}, {}) realm '{}'".format(center.x, center.y, center.z, center.realm), 33);
+        endif
+    else
+        SendSysMessage(who, "EnforceGuildRealm: OK, nao teleporta", 66);
+    endif
+
+    // --- Resumo ---
+    SendSysMessage(who, "--- RESUMO ---", 90);
+    if (!matched_area && !matched_terr)
+        SendSysMessage(who, "PROBLEMA: NPC nao esta coberto por nenhum rect/territory desta guild.", 33);
+    endif
+    if (!igr_4)
+        SendSysMessage(who, "PROBLEMA: inGuildRect retornou FALSE — NPC nao se reconhece dentro da area.", 33);
+        if (saved_str == "(vazio)")
+            SendSysMessage(who, "  -> realm da guild estava vazio e foi inferido como '{}' agora.".format(eff_realm), 53);
+            SendSysMessage(who, "  -> se isso esta errado: guild.SetProp('realm', '<realm correto>') manualmente.", 53);
+        elseif (eff_realm != npc.realm)
+            SendSysMessage(who, "  -> CAUSA PROVAVEL: guild.realm '{}' != npc.realm '{}'".format(eff_realm, npc.realm), 53);
+            SendSysMessage(who, "  -> ou corrija o realm da guild (.setguildrealm), ou mova o NPC pro realm certo.", 53);
+        endif
+    endif
+    SendSysMessage(who, "=== fim ===", 90);
+endprogram

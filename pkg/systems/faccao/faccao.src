@@ -21,6 +21,7 @@ include ":gumps:yesNo";
 include ":merchants:item_template";
 include ":gumps:htmlGump";
 include ":keys:key";
+include ":faccao:include/aluguelporta";
 
 const BUTTON_BUY_UNIFORM := 0x2;
 const BUTTON_ADD_PLAYER := 0x3;
@@ -221,7 +222,7 @@ program faccao(params)
 	GFResizePic(gump, 48, 67, 9350, 172, 326); // members background
 	GFTextLine(gump, 100, 70, 0, "Membros");
 
-	var leader_name := GetMemberDisplayName(guild_leader, use_member_alias);
+	var leader_name := GetMemberDisplayName(guild_leader, use_member_alias, guild);
 	if (!leader_name)
 		leader_name := "";
 	elseif (who.cmdlevel || aboveguild)
@@ -234,7 +235,7 @@ program faccao(params)
 		if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
 			GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER + mob.serial);
 		endif
-		GFTextLine(gump, 67, y - 2, 0, "{}".format(GetMemberDisplayName(mob, use_member_alias)));
+		GFTextLine(gump, 67, y - 2, 0, "{}".format(GetMemberDisplayName(mob, use_member_alias, guild)));
 		var permissions := guild.GetProp(cstr(mob.serial));
 		var permission_text := "";
 		foreach priv in (permissions.keys())
@@ -258,7 +259,7 @@ program faccao(params)
 			if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
 				GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER + mob.serial);
 			endif
-			var hon_name := GetMemberDisplayName(mob, use_member_alias);
+			var hon_name := GetMemberDisplayName(mob, use_member_alias, guild);
 			if (is_gm_or_leader && hon_name) hon_name := hon_name + " [Hon]"; endif
 			GFTextLine(gump, 67, y - 2, 0, "{}".format(hon_name));
 			GFToolTipText(gump, "Membro Honorário");
@@ -725,6 +726,7 @@ function guildHandler(who, input)
 				options.append("Remover Fechadura");
 				options.append("Trocar Fechadura");
 				options.append("Tornar Alugavel");
+				options.append("Selecionar Inquilino");
 				options.append("Desfazer Alugavel");
 			else
 				options.append("Adicionar Fechadura");
@@ -778,10 +780,71 @@ function guildHandler(who, input)
 				DestroyItem(fechadura);
 				SendSysMessageEx(who, "Voce instalou a fechadura com sucesso.", SSM_INFO);
 			elseif (output["Tornar"])
-				// SetObjProperty(targ, "Alugavel", 1);
-				return SendSysMessageEx(who, "Sistema em construao");
+				if (!ref_key)
+					return SendSysMessageEx(who, "A porta precisa de fechadura antes de virar alugavel.", SSM_FAIL);
+				endif
+				var rent_name := cstr(RequestGump(who, "Qual o nome do quarto?"));
+				if (!rent_name || rent_name == "")
+					return SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+				endif
+				var rent_value := cint(RequestGump(who, "Aluguel semanal em moedas de cobre?", 0, 1));
+				if (rent_value <= 0)
+					return SendSysMessageEx(who, "Valor invalido.", SSM_FAIL);
+				endif
+				SetObjProperty(targ, "Alugavel", 1);
+				SetObjProperty(targ, "RentName", rent_name);
+				SetObjProperty(targ, "RentValue", rent_value);
+				SetObjProperty(targ, "RentGuildSerial", guild.guildid);
+				SetObjProperty(targ, "RentInquilino", 0);
+				SetObjProperty(targ, "RentData", 0);
+				FaccaoAlugavel_AddDoor(targ.serial);
+				SendSysMessageEx(who, "Porta marcada como alugavel: '" + rent_name + "' por " +
+									 rent_value + " moedas/semana.", SSM_INFO);
+			elseif (output["Selecionar"])
+				if (!CInt(GetObjProperty(targ, "Alugavel")))
+					return SendSysMessageEx(who, "A porta nao esta marcada como alugavel.", SSM_FAIL);
+				endif
+				if (CInt(GetObjProperty(targ, "RentInquilino")) > 0)
+					return SendSysMessageEx(who, "A porta ja tem inquilino. Use 'Desfazer Alugavel' antes.", SSM_FAIL);
+				endif
+				SendSysMessageEx(who, "Selecione o jogador que sera o inquilino.", SSM_REQUEST);
+				var candidato := Target(who);
+				if (!candidato)
+					return SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+				endif
+				if (!candidato.isA(POLCLASS_MOBILE) || candidato.npctemplate)
+					return SendSysMessageEx(who, "Selecione um jogador.", SSM_FAIL);
+				endif
+				if (candidato.serial == who.serial)
+					return SendSysMessageEx(who, "Voce nao pode ser inquilino de si mesmo.", SSM_FAIL);
+				endif
+				if (!candidato.connected)
+					return SendSysMessageEx(who, "O jogador precisa estar online.", SSM_FAIL);
+				endif
+				if (FaccaoAlugavel_FindInquilinoDoor(candidato.serial))
+					return SendSysMessageEx(who, candidato.name + " ja e inquilino de outra porta.", SSM_FAIL);
+				endif
+				Start_Script(":faccao:aluguelporta_oferta",
+							 array{ targ.serial, who.serial, candidato.serial });
+				SendSysMessageEx(who, "Oferta enviada a " + candidato.name + ".", SSM_INFO);
 			elseif (output["Desfazer"])
+				var inq_serial := CInt(GetObjProperty(targ, "RentInquilino"));
+				if (inq_serial > 0)
+					// Rotaciona LockId — invalida a chave do ex-inquilino.
+					FaccaoAlugavel_RotateLockId(targ);
+					var ex := SystemFindObjectBySerial(inq_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+					if (ex != error && ex.connected)
+						SendSysMessageEx(ex, "Seu aluguel foi cancelado pelo lider.", SSM_HARMFUL);
+					endif
+				endif
 				EraseObjProperty(targ, "Alugavel");
+				EraseObjProperty(targ, "RentName");
+				EraseObjProperty(targ, "RentValue");
+				EraseObjProperty(targ, "RentGuildSerial");
+				EraseObjProperty(targ, "RentInquilino");
+				EraseObjProperty(targ, "RentData");
+				FaccaoAlugavel_RemoveDoor(targ.serial);
+				SendSysMessageEx(who, "Aluguel desfeito. Use 'Copiar chave' se precisar de acesso.", SSM_INFO);
 			endif
 	endif
 /* elseif (input == BUTTON_BUY_UNIFORM)
@@ -976,7 +1039,7 @@ function playerHandler(who, input)
 	elseif (output["Mudar Tipo"])
 		_MudarTipoMembroHandler(who, player);
 	elseif (output["Apelido"])
-		_MudarApelidoHandler(who, player);
+		_MudarApelidoHandler(who, player, guild);
 	endif
 
 endfunction
@@ -984,8 +1047,10 @@ endfunction
 // -------------------------------------------------------
 // Permite ao líder alterar o "apelido" (nome_personalizado em dados_convite)
 // de um membro — o nome exibido no mural. Não mexe em cargo_rp.
+// `guild` é a faccao do mural aberto (pode != who.guild quando GM edita
+// outra faccao via BUTTON_GM_OPTS).
 // -------------------------------------------------------
-function _MudarApelidoHandler(who, targ)
+function _MudarApelidoHandler(who, targ, guild)
 	if (!targ)
 		return SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
 	endif
@@ -1014,6 +1079,18 @@ function _MudarApelidoHandler(who, targ)
 		"data_convite"       := (dados_antigos && dados_antigos != error && dados_antigos.data_convite) ? dados_antigos.data_convite : POLCore().systime,
 		"convidado_por"      := (dados_antigos && dados_antigos != error && dados_antigos.convidado_por) ? dados_antigos.convidado_por : who.serial
 	});
+
+	// Espelha em guild.aliases — fonte da verdade no mural, imune a convidador
+	// deletado ou a troca de faccao do alvo (ver _ResolveRPName em faccao.src).
+	// Padrão "load-or-create" igual ao usado em pkg/commands/player/r.src para
+	// o dict "conhecidos": dict.errortext em dict valido retorna truthy, entao
+	// nao serve como sentinela aqui.
+	if (guild)
+		var aliases := guild.GetProp("aliases");
+		if (aliases == error || !aliases) aliases := dictionary{}; endif
+		aliases[CStr(targ.serial)] := nome;
+		guild.SetProp("aliases", aliases);
+	endif
 
 	SendSysMessageEx(who, "Apelido de " + targ.name + " alterado para: " + nome, SSM_INFO);
 	if (targ.connected)
@@ -2285,25 +2362,37 @@ endfunction
 //   NUNCA exibir nome_inicial (nome OOC do char)
 //   NUNCA exibir acctname (nome da conta — OOC, vaza login)
 //
-// Cadeia de fallback:
-//   1. dados_convite.nome_personalizado (preenchido na Mesa/Pergaminho — IDEAL)
-//   2. Apelido que o convidador deu ao convidado via .r (conhecidos[serial])
-//   3. "Membro Desconhecido" (ultimo recurso, sem vazar OOC)
-function GetMemberDisplayName(mob, use_alias := 0)
+// Cadeia de fallback (ordem de prioridade):
+//   1. guild.aliases[serial] — dict da propria faccao, imune a convidador
+//      deletado, populado em _MudarApelidoHandler. Mata o bug recorrente.
+//   2. dados_convite.nome_personalizado (preenchido na Mesa/Pergaminho)
+//   3. Apelido que o convidador deu ao convidado via .r (conhecidos[serial])
+//   4. "Membro Desconhecido" (ultimo recurso, sem vazar OOC)
+function GetMemberDisplayName(mob, use_alias := 0, guild := 0)
 	if (!mob) return ""; endif
 	if (use_alias == 1 || use_alias == 2)
-		return _ResolveRPName(mob);
+		return _ResolveRPName(mob, guild);
 	endif
 	return mob.name;
 endfunction
 
-function _ResolveRPName(mob)
+function _ResolveRPName(mob, guild := 0)
+	// PRIORIDADE 1: alias setado pela propria faccao (independe de convidador)
+	if (guild)
+		var aliases := guild.GetProp("aliases");
+		if (aliases != error && aliases)
+			var alias_guild := aliases[CStr(mob.serial)];
+			if (alias_guild != error && alias_guild != "") return alias_guild; endif
+		endif
+	endif
+
 	var dados := GetObjProperty(mob, "dados_convite");
 	if (dados && !dados.errortext)
+		// PRIORIDADE 2: nome RP que o proprio jogador definiu na Mesa/Pergaminho
 		var nome_rp := dados.nome_personalizado;
 		if (nome_rp && !nome_rp.errortext && nome_rp != "") return nome_rp; endif
 
-		// Fallback: apelido (.r) que o convidador deu ao convidado
+		// PRIORIDADE 3: apelido (.r) que o convidador deu ao convidado
 		var convidador_serial := dados.convidado_por;
 		if (convidador_serial)
 			var convidador := SystemFindObjectBySerial(convidador_serial,
