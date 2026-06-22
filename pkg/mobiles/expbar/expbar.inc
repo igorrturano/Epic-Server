@@ -102,17 +102,15 @@ function LevelUp(who)
 
     // Even levels: scroll reward | Odd levels: HP bonus
     if (curr_level % 2 == 0)
-        var scroll := CreateItemInBackpack(who, "pergaminho_" + curr_level);
-        if (!scroll)
-            var bank := CP_GetStorageContainerForMobile(who, CP_DEFAULT_AREA, CP_CREATE);
-            scroll := CreateItemInContainer(bank, "pergaminho_" + curr_level);
-            SendSysMessageEx(who, "Pergaminho enviado para o banco.", SSM_INFO);
-        endif
-        if (scroll)
-            SetObjProperty(scroll, "owner", who.serial);
-            scroll.color := 2117;
-            scroll.newbie := 1;
-        endif
+        // Pergaminho vai pra fila de pendencias e e entregue por
+        // EntregarPergaminhosPendentes — idempotente e re-tentavel. Caso
+        // a entrega imediata falhe (mochila cheia, druida metamorfoseado,
+        // banco indisponivel) o nivel fica pendente e e re-tentado no
+        // logon e a cada pergaminho consumido em comprahab. Resolve o
+        // burst do AddXP em que multiplos LevelUps em sequencia perdiam
+        // pergaminhos por causa do discrete_gump bloqueante.
+        AddPergaminhoPendente(who, curr_level);
+        EntregarPergaminhosPendentes(who);
     else
         // ODD level — HP bonus.
         // Path-rework characters: HP grows automatically because GetPH() uses
@@ -152,6 +150,218 @@ function LevelUp(who)
     UpdateXPClient(who);
     discrete_gump(who);
     return 1;
+endfunction
+
+// =============================================================================
+// PERGAMINHOS PENDENTES - Entrega idempotente, retroativa.
+//
+// LevelUp acrescenta cada nivel par alcancado em "pergaminhosPendentes"
+// (ObjProperty: array de niveis). EntregarPergaminhosPendentes percorre a
+// lista, cria os itens (backpack primeiro, banco como fallback), e so remove
+// o nivel da pendencia quando o item realmente entrou.
+//
+// Pontos de entrega:
+//   - LevelUp: tentativa imediata, caso comum (sucede de primeira).
+//   - expbar_logon: retoma caso o player tenha caido durante o burst.
+//   - comprahab: apos consumir um pergaminho, libera o proximo da fila.
+//
+// Por que essa arquitetura: o discrete_gump no fim do LevelUp e bloqueante
+// (GFSendGump espera input). Em um burst de XP que sobe varios niveis o
+// while em AddXP nao consegue criar cada pergaminho de forma confiavel —
+// gumps anteriores eram fechados (CloseGump no inicio do discrete_gump),
+// CreateItemInBackpack podia falhar transitoriamente sem retentativa, e
+// o player ficava com Level alto e zero pergaminhos. Fila + idempotencia
+// elimina a perda.
+// =============================================================================
+// Validador: pergaminho so existe pra nivel par no intervalo do XP system.
+// Guard em AddPergaminhoPendente impede gatilhos errados (ex.: delhabs em
+// slot 0 do myhabs) de poluir a fila com niveis sem template.
+function IsNivelPergaminhoValido(nivel)
+    var n := CInt(nivel);
+    return n >= 2 && n <= MAX_LEVEL && (n % 2) == 0;
+endfunction
+
+function AddPergaminhoPendente(who, nivel)
+    if (!IsNivelPergaminhoValido(nivel))
+        return 0;
+    endif
+    var pendentes := GetObjProperty(who, "pergaminhosPendentes");
+    if (!pendentes || pendentes.errortext)
+        pendentes := array{};
+    endif
+    if (nivel in pendentes)
+        return 0;
+    endif
+    pendentes.append(nivel);
+    SetObjProperty(who, "pergaminhosPendentes", pendentes);
+    return 1;
+endfunction
+
+// Mapping nivel par -> objtype do pergaminho (fonte: itemdesc charactercreation).
+// Sequencia nao e contigua: pula 0x6161 (lvl0hab, nao usado pelo XP system).
+function PergaminhoObjtypePorNivel(nivel)
+    case (nivel)
+        2:  return 0x6157;
+        4:  return 0x6158;
+        6:  return 0x6159;
+        8:  return 0x6160;
+        10: return 0x6162;
+        12: return 0x6163;
+        14: return 0x6164;
+        16: return 0x6165;
+        18: return 0x6166;
+        20: return 0x6167;
+        default: return 0;
+    endcase
+endfunction
+
+// Procura recursivamente um pergaminho do nivel em mochila e banco do player.
+// Usado pela reconciliacao p/ nao duplicar item que ja existe no inventario.
+function PossuiPergaminhoDoNivel(who, nivel)
+    var objtype := PergaminhoObjtypePorNivel(nivel);
+    if (!objtype)
+        return 0;
+    endif
+
+    var bp := who.backpack;
+    if (bp && !bp.errortext)
+        foreach item in (EnumerateItemsInContainer(bp))
+            if (item.objtype == objtype)
+                return 1;
+            endif
+            SleepMS(2);
+        endforeach
+    endif
+
+    var bank := CP_GetStorageContainerForMobile(who, CP_DEFAULT_AREA, CP_NOCREATE);
+    if (bank && !bank.errortext)
+        foreach item in (EnumerateItemsInContainer(bank))
+            if (item.objtype == objtype)
+                return 1;
+            endif
+            SleepMS(2);
+        endforeach
+    endif
+
+    return 0;
+endfunction
+
+// Reconciliacao one-shot por char (guardada por flag pergaminhos_reconcile_v1).
+//
+// Para chars que ja estavam no estado bugado (Level alto, recebeu so o
+// primeiro pergaminho), varre cada nivel par <= Level atual:
+//   - Se buyhab[nivel] == 2 (habilidade ja comprada): pula, nada a devolver.
+//   - Se o player ja tem o pergaminho desse nivel na mochila ou banco: pula.
+//   - Senao: adiciona na fila de pendentes p/ entrega.
+//
+// Roda exatamente uma vez por personagem. Idempotente: a flag e setada antes
+// de tentar entregar; se a entrega falhar (banco indisponivel), os niveis
+// ficam na fila normal e sao retentados nos gatilhos comuns.
+function ReconciliarPergaminhos(who)
+    if (!who || who.errortext)
+        return 0;
+    endif
+    if (GetObjProperty(who, "pergaminhos_reconcile_v1"))
+        return 0;
+    endif
+
+    var curr_level := CInt(GetObjProperty(who, "Level"));
+    if (curr_level < 2)
+        SetObjProperty(who, "pergaminhos_reconcile_v1", 1);
+        return 0;
+    endif
+
+    var buyhab := GetObjProperty(who, "buyhab");
+    if (!buyhab || buyhab.errortext)
+        buyhab := dictionary;
+    endif
+
+    var adicionados := 0;
+    var nivel := 2;
+    while (nivel <= curr_level)
+        if (CInt(buyhab[nivel]) != 2 && !PossuiPergaminhoDoNivel(who, nivel))
+            if (AddPergaminhoPendente(who, nivel))
+                adicionados := adicionados + 1;
+            endif
+        endif
+        nivel := nivel + 2;
+    endwhile
+
+    SetObjProperty(who, "pergaminhos_reconcile_v1", 1);
+
+    if (adicionados > 0)
+        SendSysMessageEx(who, "Restaurando " + adicionados + " pergaminho(s) que ficaram pendentes.", SSM_INFO);
+    endif
+
+    return adicionados;
+endfunction
+
+function EntregarPergaminhosPendentes(who)
+    if (!who || who.errortext)
+        return 0;
+    endif
+
+    var pendentes := GetObjProperty(who, "pergaminhosPendentes");
+    if (!pendentes || pendentes.errortext || pendentes.size() == 0)
+        return 0;
+    endif
+
+    // CLAIM imediato: zera a fila ANTES de iterar pra impedir que outra
+    // chamada concorrente (logon + LevelUp recente, p.ex.) leia a mesma
+    // lista e duplique os pergaminhos. Os que falharem voltam pra fila
+    // no final, com merge p/ nao perder pendencias adicionadas durante
+    // o nosso loop.
+    EraseObjProperty(who, "pergaminhosPendentes");
+
+    var entregues := 0;
+    var restantes := array{};
+    foreach nivel in pendentes
+        // Defense-in-depth: descarta nivel invalido que tenha sido
+        // persistido por versao antiga ou trigger errado. Sem template,
+        // CreateItem falharia infinitamente e o nivel ficaria preso.
+        if (!IsNivelPergaminhoValido(nivel))
+            continue;
+        endif
+
+        var scroll := CreateItemInBackpack(who, "pergaminho_" + nivel);
+        if (!scroll || scroll.errortext)
+            var bank := CP_GetStorageContainerForMobile(who, CP_DEFAULT_AREA, CP_CREATE);
+            if (bank && !bank.errortext)
+                scroll := CreateItemInContainer(bank, "pergaminho_" + nivel);
+                if (scroll && !scroll.errortext)
+                    SendSysMessageEx(who, "Pergaminho do nivel " + nivel + " enviado para o banco.", SSM_INFO);
+                endif
+            endif
+        endif
+
+        if (scroll && !scroll.errortext)
+            SetObjProperty(scroll, "owner", who.serial);
+            scroll.color := 2117;
+            scroll.newbie := 1;
+            entregues := entregues + 1;
+        else
+            // Falha transiente — re-enfileira no final.
+            restantes.append(nivel);
+        endif
+    endforeach
+
+    if (restantes.size() > 0)
+        // Merge com qualquer pendencia adicionada durante o loop por
+        // gatilho concorrente — evita perder LevelUp que entrou no meio
+        // do nosso EntregarPergaminhosPendentes.
+        var atual := GetObjProperty(who, "pergaminhosPendentes");
+        if (!atual || atual.errortext)
+            atual := array{};
+        endif
+        foreach n in restantes
+            if (!(n in atual))
+                atual.append(n);
+            endif
+        endforeach
+        SetObjProperty(who, "pergaminhosPendentes", atual);
+    endif
+
+    return entregues;
 endfunction
 
 function UpdateXPClient(who)
