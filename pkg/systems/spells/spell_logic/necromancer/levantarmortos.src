@@ -3,6 +3,7 @@ use os;
 
 include ":spells:tnmagery";
 include ":spells:Controller/SpellController";
+include ":spells:summon";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -59,39 +60,27 @@ program SpellScript(params)
 
 	// Random de Monstros
 	var random := RandomInt(Cint(skill));
-	var undead;
+	var template;
 
-	if (random < 20)
-		undead := createnpcfromtemplate(":epicai:headless", targ.x, targ.y, targ.z, 0, who.realm);
-	elseif (random < 40)
-		undead := createnpcfromtemplate(":epicai:skeleton1", targ.x, targ.y, targ.z, 0, who.realm);
-	elseif (random < 50)
-		undead := createnpcfromtemplate(":epicai:zombie", targ.x, targ.y, targ.z, 0, who.realm);
-	elseif (random < 70)
-		undead := createnpcfromtemplate(":epicai:ossadaescarlate", targ.x, targ.y, targ.z, 0, who.realm);// Template inexistente
-	elseif (random < 80)
-		undead := createnpcfromtemplate(":epicai:zombielord", targ.x, targ.y, targ.z, 0, who.realm);// Template inexistente
-	elseif (random < 90)
-		undead := createnpcfromtemplate(":epicai:spectre", targ.x, targ.y, targ.z, 0, who.realm);
-	elseif (random < 95)
-		undead := createnpcfromtemplate(":epicai:skeletonmage", targ.x, targ.y, targ.z, 0, who.realm);
-	elseif (random < 5000)
-		undead := createnpcfromtemplate(":epicai:fleshgolem", targ.x, targ.y, targ.z, 0, who.realm);
+	if (random < 25)
+		template := ":epicai:headless";
+	elseif (random < 45)
+		template := ":epicai:skeleton1";
+	elseif (random < 65)
+		template := ":epicai:zombie";
+	elseif (random < 85)
+		template := ":epicai:spectre";
+	elseif (random < 105)
+		template := ":epicai:skeletonmage";
+	else
+		template := ":epicai:fleshgolem";
 	endif
+
+	var undead := summon(template, targ, who);
 
 	SC_HandleSound(who, targ, 383);
 
 	Destroyitem(targ);
-	undead.SetMaster(who);
-
-	SetObjProperty(undead, "GuardKill", 1);
-	SetObjProperty(undead, "owner", who.serial);
-	SetObjProperty(undead, "name", targ.name);
-	SetObjproperty(undead, "script", targ.script);
-	SetObjProperty(undead, "AntigoTreinadorID", who.serial);
-
-	undead.script := ":epicai:controlledBrain";
-	RestartScript(undead);
 
 	Run_Script_To_Completion(":death:npcdeath", { undead });
 

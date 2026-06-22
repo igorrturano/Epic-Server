@@ -26,7 +26,7 @@ program TELEPORT_Action(params)
 		return 0;
 	endif
 
-	var pets := ListPetsNear(mobile, 4);
+	var pets := ListAllPetsAndSummonedPetsNear(mobile, 4);
 
 	SetObjProperty(mobile, "#Teleported", ReadMillisecondClock());
 	MoveObjectToLocation(mobile, x, y, z, realm, MOVEOBJECT_FORCELOCATION);
