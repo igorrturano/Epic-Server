@@ -6,9 +6,9 @@ include ":fezes:include/pid_guard";
 const PROP_CHEIRO_PID    := "#cheiro_pid";
 const PROP_CHEIRO_EXPIRA := "#cheiro_expira";
 
-set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
-
 program Cheiro(params)
+    set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
+
     var who := params[1];
     if (!who) return 0; endif
 
