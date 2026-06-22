@@ -1,20 +1,32 @@
 // $Id: canInsert.src 87 2006-05-23 19:04:43Z sroyalty $
 
 use uo;
+use os;
 use cfgfile;
 include ":attributes:attributes";
 include ":containers:checks";
 include ":wrappers:Objects/Model/MobileWrapper";
 
 program canInsert(mobile, container, movetype, inserttype, item, existing_stack, amount_to_add)
-	var mobWrapper := MobileWrapper(mobile);
-	if (mobWrapper.IsMounted())
-		SendSysMessage(mobile, "Voce nao pode fazer isto montado.");
-		return 0;
-	endif
-	if (mobile.frozen || mobile.paralyzed)
-		SendSysMessage(mobile, "Voce esta paralizado.");
-		return 0;
+	// Validacoes de player so aplicam se ha um mobile real (acao manual do player).
+	// Movimentacoes iniciadas por script passam mobile=uninitialized — nesse caso pulamos
+	// para a checagem de validade do item.
+	if (mobile)
+		var mobWrapper := MobileWrapper(mobile);
+		if (mobWrapper.IsMounted())
+			// Se o container tem um NPC dono (ex.: leiloeiro, banker), faz ele falar.
+			var owner := container.character_owner;
+			if (owner && owner.npctemplate)
+				PrintTextAbove(owner, "Ei! Eu nao negocio com pessoas montadas, desca dai.");
+			else
+				SendSysMessage(mobile, "Voce nao pode fazer isto montado.");
+			endif
+			return 0;
+		endif
+		if (mobile.frozen || mobile.paralyzed)
+			SendSysMessage(mobile, "Voce nao pode fazer isto paralizado.");
+			return 0;
+		endif
 	endif
 	var valid := { 0xba63,
 			   	0xba64,
