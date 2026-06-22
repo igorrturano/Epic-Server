@@ -1,0 +1,112 @@
+// =============================================================================
+// aluguelporta_oferta.src — Gump de aceite de aluguel de porta de faccao
+// =============================================================================
+//
+// Spawnado pelo mural quando o lider clica "Selecionar Inquilino". Roda no
+// contexto do player escolhido e mostra um YesNo descrevendo o quarto, valor
+// semanal e regras de cobranca. Se aceitar:
+//   - rotaciona o LockId da porta (invalida chave antiga)
+//   - cria chave de ferro nova na backpack do inquilino com o novo LockId
+//   - seta RentInquilino + RentData na porta
+//   - notifica lider/inquilino
+//
+// PARAMS
+//   params[1] — serial da porta alugavel
+//   params[2] — serial do lider (quem ofereceu)
+//   params[3] — serial do player inquilino candidato
+// =============================================================================
+
+use uo;
+use os;
+use guilds;
+
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include ":keys:key";
+include ":faccao:include/aluguelporta";
+include "include/say";
+
+const OFERTA_TIMEOUT := 60; // segundos pra player responder
+
+program OfertaAluguelPorta(params)
+    var porta := SystemFindObjectBySerial(CInt(params[1]));
+    var lider := SystemFindObjectBySerial(CInt(params[2]));
+    var player := SystemFindObjectBySerial(CInt(params[3]));
+
+    if (porta == error || lider == error || player == error)
+        return 0;
+    endif
+    if (!player.connected)
+        if (lider != error && lider.connected)
+            SendSysMessageEx(lider, "O inquilino candidato nao esta online.", SSM_FAIL);
+        endif
+        return 0;
+    endif
+
+    // Revalida estado da porta — outra sessao pode ter mudado entre o clique
+    // do lider e este script rodar.
+    if (!CInt(GetObjProperty(porta, "Alugavel")))
+        SendSysMessageEx(lider, "A porta nao esta marcada como alugavel.", SSM_FAIL);
+        return 0;
+    endif
+    if (CInt(GetObjProperty(porta, "RentInquilino")) > 0)
+        SendSysMessageEx(lider, "A porta ja tem inquilino.", SSM_FAIL);
+        return 0;
+    endif
+
+    var nome := CStr(GetObjProperty(porta, "RentName"));
+    if (nome == "" || nome == "0") nome := "Quarto sem nome"; endif
+    var valor := CInt(GetObjProperty(porta, "RentValue"));
+    var guild_serial := CInt(GetObjProperty(porta, "RentGuildSerial"));
+
+    var msg := lider.name + " oferece o aluguel do quarto '" + nome + "' por " +
+               valor + " moedas de cobre por semana. A cobranca e semanal e sai do seu " +
+               "banco; se faltar, da mochila. Se faltar nos dois, voce perde a chave. Aceita?";
+
+    var aceitou := YesNo(player, msg);
+    if (!aceitou)
+        SendSysMessageEx(lider, player.name + " recusou o aluguel de '" + nome + "'.", SSM_INFO);
+        SendSysMessageEx(player, "Voce recusou o aluguel.", SSM_INFO);
+        return 0;
+    endif
+
+    // Recheca apos sleep do gump.
+    if (!CInt(GetObjProperty(porta, "Alugavel")) ||
+        CInt(GetObjProperty(porta, "RentInquilino")) > 0)
+        SendSysMessageEx(player, "A oferta nao esta mais disponivel.", SSM_FAIL);
+        return 0;
+    endif
+    if (FaccaoAlugavel_FindInquilinoDoor(player.serial))
+        SendSysMessageEx(player, "Voce ja e inquilino de outra porta. Devolva-a antes.", SSM_FAIL);
+        if (lider.connected)
+            SendSysMessageEx(lider, player.name + " ja e inquilino de outra porta.", SSM_FAIL);
+        endif
+        return 0;
+    endif
+
+    // Compromete a porta ao inquilino. LockId novo invalida chave anterior do
+    // lider — ele pode "Copiar chave" depois se quiser.
+    var lockid := FaccaoAlugavel_RotateLockId(porta);
+    SetObjProperty(porta, "RentInquilino", player.serial);
+    SetObjProperty(porta, "RentData", polcore().systime);
+
+    // Garante registro na global (idempotente).
+    FaccaoAlugavel_AddDoor(porta.serial);
+
+    var key := CreateItemInBackpack(player, "ironkey", 1);
+    if (key == error)
+        // Fallback: dropa no chao do player.
+        key := CreateItemAtLocation(player.x, player.y, player.z, "ironkey", 1, player.realm);
+    endif
+    if (key != error)
+        SetObjProperty(key, "LockId", lockid);
+        key.name := "Chave do quarto " + nome;
+    endif
+
+    SendSysMessageEx(player, "Voce aceitou o aluguel de '" + nome + "'. Chave entregue.", SSM_INFO);
+    if (lider.connected)
+        SendSysMessageEx(lider, player.name + " aceitou o aluguel de '" + nome + "'.", SSM_INFO);
+        SendSysMessageEx(lider, "A chave que voce tinha foi invalidada. Use 'Copiar chave' se precisar.", SSM_INFO);
+    endif
+    return 1;
+endprogram
