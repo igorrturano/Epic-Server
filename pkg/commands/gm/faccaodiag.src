@@ -1,0 +1,288 @@
+// .faccaodiag — gump de diagnostico de TODOS os NPCs de faccao (guarda + vendor).
+// Varre todas as guilds, coleta cada NPC em npcs_active e mostra:
+//   nome, guild, NPC xyz/realm, Guild center xyz/realm, inGuildRect, causa do erro.
+use uo;
+use os;
+use basic;
+use util;
+use guilds;
+use cfgfile;
+use datafile;
+
+include ":faccao:faccao";
+include ":gumps:gumps";
+
+set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
+
+const PAGE_SIZE := 12;
+
+function _fmtXYZ(x, y, z)
+    return "({},{},{})".format(x, y, z);
+endfunction
+
+function CollectDiag()
+    var rows := array{};
+    var sumtotal := 0, sumok := 0, sumfora := 0, sumbadrealm := 0, sumnotfound := 0;
+
+    foreach guild in ListGuilds()
+        sleepms(5);
+        var npcs_active := guild.GetProp("npcs_active");
+        if (!npcs_active || npcs_active == error || npcs_active.size() == 0)
+            continue;
+        endif
+
+        var gname := guild.GetProp("name");
+        if (!gname || gname == error) gname := "guild#" + CStr(guild.guildid); endif
+
+        var g_realm := GetGuildRealm(guild);
+        var center := GetGuildCenter(guild, 0);
+        var c_x := center ? center.x : 0;
+        var c_y := center ? center.y : 0;
+        var c_z := center ? center.z : 0;
+        var c_realm := center ? center.realm : g_realm;
+
+        foreach entry in npcs_active
+            sleepms(2);
+            var serial := entry.serial;
+            if (!serial) continue; endif
+
+            sumtotal := sumtotal + 1;
+            var npc := SystemFindObjectBySerial(serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+
+            if (!npc || !npc.isA(POLCLASS_MOBILE))
+                sumnotfound := sumnotfound + 1;
+                rows.append(struct{
+                    "status"  := "MISSING",
+                    "name"    := "(serial 0x" + Hex(serial) + ")",
+                    "guild"   := gname,
+                    "guildid" := guild.guildid,
+                    "serial"  := serial,
+                    "npc_xyz" := "n/a",
+                    "g_xyz"   := _fmtXYZ(c_x, c_y, c_z),
+                    "g_realm" := c_realm,
+                    "cause"   := "NPC nao encontrado (deletado?)"
+                });
+                continue;
+            endif
+
+            var n_xyz := _fmtXYZ(npc.x, npc.y, npc.z);
+            var inside := inGuildRect(guild, npc, 4);
+            var realm_match := (npc.realm == g_realm);
+
+            var status, cause;
+            if (inside && realm_match)
+                sumok := sumok + 1;
+                status := "OK";
+                cause  := "";
+            elseif (!realm_match)
+                sumbadrealm := sumbadrealm + 1;
+                status := "REALM";
+                cause  := "npc.realm='" + npc.realm + "' != guild.realm='" + g_realm + "'";
+            else
+                sumfora := sumfora + 1;
+                status := "FORA";
+                cause  := "fora do rect/territory (xy)";
+            endif
+
+            rows.append(struct{
+                "status"  := status,
+                "name"    := npc.name,
+                "guild"   := gname,
+                "guildid" := guild.guildid,
+                "serial"  := npc.serial,
+                "npc_xyz" := n_xyz + " " + npc.realm,
+                "g_xyz"   := _fmtXYZ(c_x, c_y, c_z),
+                "g_realm" := c_realm,
+                "cause"   := cause
+            });
+        endforeach
+    endforeach
+
+    return struct{
+        "rows"     := rows,
+        "total"    := sumtotal,
+        "ok"       := sumok,
+        "fora"     := sumfora,
+        "badrealm" := sumbadrealm,
+        "missing"  := sumnotfound
+    };
+endfunction
+
+function StatusColor(s)
+    case (s)
+        "OK":      return 68;   // verde
+        "REALM":   return 33;   // vermelho
+        "FORA":    return 53;   // laranja
+        "MISSING": return 38;   // cinza
+    endcase
+    return 2100;
+endfunction
+
+function ShowGump(who, data, page)
+    var rows := data.rows;
+    var total := rows.size();
+    var max_page := (total + PAGE_SIZE - 1) / PAGE_SIZE;
+    if (max_page < 1) max_page := 1; endif
+    if (page < 1) page := 1; endif
+    if (page > max_page) page := max_page; endif
+
+    var W := 920, H := 560;
+    var gump := GFCreateGump(80, 60);
+    GFResizePic(gump, 0, 0, 0x2436, W, H);
+    GFPage(gump, 0);
+
+    // Header / sumario
+    GFTextLine(gump, 20, 12, 90, "FACCAO NPC DIAG — " + CStr(total) + " NPCs");
+    GFTextLine(gump, 20, 32, 68,
+        "OK: " + CStr(data.ok) +
+        "   FORA: " + CStr(data.fora) +
+        "   REALM: " + CStr(data.badrealm) +
+        "   MISSING: " + CStr(data.missing));
+
+    // Cabecalho da tabela
+    var y := 60;
+    GFTextLine(gump,  20, y, 2100, "Status");
+    GFTextLine(gump,  90, y, 2100, "NPC");
+    GFTextLine(gump, 270, y, 2100, "Faccao");
+    GFTextLine(gump, 420, y, 2100, "NPC xyz / realm");
+    GFTextLine(gump, 610, y, 2100, "Guild xyz / realm");
+    GFTextLine(gump, 800, y, 2100, "Fix");
+    GFTextLine(gump, 855, y, 2100, "Tele");
+    y := y + 18;
+
+    // Linhas da pagina atual
+    var start_i := (page - 1) * PAGE_SIZE + 1;
+    var end_i := start_i + PAGE_SIZE - 1;
+    if (end_i > total) end_i := total; endif
+
+    for i := start_i to end_i
+        var r := rows[i];
+        var c := StatusColor(r.status);
+        GFTextLine(gump,  20, y, c,    r.status);
+        GFTextLine(gump,  90, y, 2100, CStr(r.name));
+        GFTextLine(gump, 270, y, 2100, CStr(r.guild));
+        GFTextLine(gump, 420, y, 2100, CStr(r.npc_xyz));
+        GFTextLine(gump, 610, y, 2100, CStr(r.g_xyz) + " " + CStr(r.g_realm));
+        // Botao "Trazer" (status OK nao precisa)
+        if (r.status != "OK")
+            GFAddButton(gump, 800, y - 2, 2223, 2224, 1, 1000 + i);
+        endif
+        // Botao "Tele" — me leva ate o NPC (MISSING nao tem NPC)
+        if (r.status != "MISSING")
+            GFAddButton(gump, 855, y - 2, 2223, 2224, 1, 2000 + i);
+        endif
+        y := y + 16;
+        if (r.cause != "")
+            GFTextLine(gump, 90, y, 33, "  ^ " + CStr(r.cause));
+            y := y + 14;
+        endif
+    endfor
+
+    // Rodape com paginacao
+    var footer_y := H - 40;
+    GFTextLine(gump, 20, footer_y, 90, "Pagina " + CStr(page) + " / " + CStr(max_page));
+    if (page > 1)
+        GFAddButton(gump, 200, footer_y - 2, 2223, 2224, 1, 100); // prev
+        GFTextLine(gump, 225, footer_y, 2100, "Anterior");
+    endif
+    if (page < max_page)
+        GFAddButton(gump, 360, footer_y - 2, 2223, 2224, 1, 200); // next
+        GFTextLine(gump, 385, footer_y, 2100, "Proxima");
+    endif
+    GFAddButton(gump, 520, footer_y - 2, 2223, 2224, 1, 300); // refresh
+    GFTextLine(gump, 545, footer_y, 2100, "Refresh");
+    GFAddButton(gump, 680, footer_y - 2, 2223, 2224, 1, 0);   // fechar
+    GFTextLine(gump, 705, footer_y, 2100, "Fechar");
+
+    var input := GFSendGump(who, gump)[0];
+    case (input)
+        100: ShowGump(who, data, page - 1); break;
+        200: ShowGump(who, data, page + 1); break;
+        300:
+            SendSysMessage(who, "[faccaodiag] Recoletando...", 66);
+            var newdata := CollectDiag();
+            ShowGump(who, newdata, 1);
+            break;
+        0:   break;
+        default:
+            // Botoes Fix (1000+) e Tele (2000+) por linha
+            if (input >= 2000 && input <= 2000 + total)
+                var row_t := rows[input - 2000];
+                TeleRow(who, row_t);
+                ShowGump(who, data, page);
+            elseif (input >= 1000 && input <= 1000 + total)
+                var row := rows[input - 1000];
+                FixRow(who, row);
+                SendSysMessage(who, "[faccaodiag] Recoletando apos fix...", 66);
+                var newdata2 := CollectDiag();
+                ShowGump(who, newdata2, page);
+            endif
+            break;
+    endcase
+endfunction
+
+function TeleRow(who, row)
+    var npc := SystemFindObjectBySerial(row.serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    if (!npc || !npc.isA(POLCLASS_MOBILE))
+        return SendSysMessage(who, "[tele] NPC 0x" + Hex(row.serial) + " sumiu — use Refresh.", 33);
+    endif
+    MoveObjectToLocation(who, npc.x, npc.y, npc.z, npc.realm, MOVEOBJECT_FORCELOCATION);
+    SendSysMessage(who, "[tele] -> " + CStr(npc.name) + " em (" +
+        CStr(npc.x) + "," + CStr(npc.y) + "," + CStr(npc.z) + ") realm '" + CStr(npc.realm) + "'.", 66);
+endfunction
+
+function FixRow(who, row)
+    var guild := FindGuild(row.guildid);
+    if (!guild)
+        return SendSysMessage(who, "[fix] Guild #" + CStr(row.guildid) + " nao encontrada.", 33);
+    endif
+
+    if (row.status == "MISSING")
+        var npcs_active := guild.GetProp("npcs_active");
+        if (!npcs_active || npcs_active == error)
+            return SendSysMessage(who, "[fix] npcs_active vazio.", 33);
+        endif
+        var novo := array{};
+        foreach e in npcs_active
+            if (e.serial != row.serial)
+                novo.append(e);
+            endif
+            sleepms(2);
+        endforeach
+        guild.SetProp("npcs_active", novo);
+        SendSysMessage(who, "[fix] Serial 0x" + Hex(row.serial) + " removido de npcs_active da '" + CStr(row.guild) + "'.", 66);
+        return;
+    endif
+
+    // FORA ou REALM: teleporta NPC para o centro da guild
+    var npc := SystemFindObjectBySerial(row.serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    if (!npc || !npc.isA(POLCLASS_MOBILE))
+        return SendSysMessage(who, "[fix] NPC 0x" + Hex(row.serial) + " sumiu — use Refresh.", 33);
+    endif
+    var center := GetGuildCenter(guild, npc.z);
+    if (!center)
+        return SendSysMessage(who, "[fix] Guild '" + CStr(row.guild) + "' sem area definida — nao da pra teleportar.", 33);
+    endif
+    MoveObjectToLocation(npc, center.x, center.y, center.z, center.realm, MOVEOBJECT_FORCELOCATION);
+    // Reseta fix_loc para o novo ponto, senao o brain pode tentar voltar ao antigo
+    SetObjProperty(npc, "fix_loc", struct{
+        "x" := center.x, "y" := center.y, "z" := center.z, "facing" := npc.facing
+    });
+    EraseObjProperty(npc, "patrolling");
+    EraseObjProperty(npc, "path");
+    EraseObjProperty(npc, "#enemy_last_loc");
+    RestartScript(npc);
+    SendSysMessage(who, "[fix] " + CStr(npc.name) + " teleportado para (" +
+        CStr(center.x) + "," + CStr(center.y) + ") realm '" + CStr(center.realm) + "'.", 66);
+endfunction
+
+program faccao_diag_gump(who)
+    if (!who.cmdlevel)
+        return;
+    endif
+
+    SendSysMessage(who, "[faccaodiag] Coletando NPCs de faccao...", 66);
+    var data := CollectDiag();
+    SendSysMessage(who, "[faccaodiag] " + CStr(data.total) + " NPCs avaliados. Abrindo gump...", 66);
+    ShowGump(who, data, 1);
+endprogram

@@ -30,6 +30,7 @@ include ":expbar:expbar";
 include ":epicAI:epicai";
 include ":tn:cooldown";
 include ":hotbar:include/custombuff";
+include ":gathering:mineralcorpse";
 // include ":bounty:include/bountyCore";  // WIP: pacote bounty/ ainda nao commitado
 // include ":entropy:entropy";
 
@@ -305,6 +306,10 @@ program core_npcDeath(params)
 	SetName(corpse, corpse_name);
 
 	var template := GetObjProperty(corpse, "npctemplate"); // Set by the core.
+
+	// Marca o cadáver de golens minerais — habilita mineração com picareta
+	// no próprio corpo durante MINERAL_CORPSE_MAX_SWINGS swings.
+	MarkCorpseAsMineavel(corpse, template);
 
 	// === Bounty Hook: Marca de Contrato sobre cadáver de alvo do pool ===
 	// WIP: pacote bounty/ ainda nao commitado — bloco desativado para destravar build.

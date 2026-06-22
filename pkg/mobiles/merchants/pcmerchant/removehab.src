@@ -4,6 +4,7 @@ use cfgfile;
 include ":gumps:gumps";
 include "include/say";
 include ":charactercreation:habilidades";
+include ":expbar:expbar";
 
 program reset(params)
 	print("Inicio");
@@ -127,11 +128,19 @@ program reset(params)
 			// sendsysmessage(who, "buy antes " + buy[nvl]);
 
 			buy[cint(nvl)] := 1;
+			// Reset destroi o pergaminho original (consumido em comprahab).
+			// Como o slot par foi reaberto, enfileira um novo pergaminho
+			// p/ o player poder comprar a habilidade de substituicao.
+			if (cint(nvl) % 2 == 0)
+				AddPergaminhoPendente(who, cint(nvl));
+			endif
 		// sendsysmessage(who, "buy depois " + buy[nvl]);
 		endforeach
 
 		SetObjProperty(who, "myhabs", habs);
 		SetObjProperty(who, "buyhab", buy);
+		// Drena a fila — entrega os pergaminhos que o reset acabou de gerar.
+		EntregarPergaminhosPendentes(who);
 		SendSysMessage(who, "Suas habilidades foram atualizadas.", SSM_INFO);
 	// Sendsysmessage(who, "habs final: " + habs);
 

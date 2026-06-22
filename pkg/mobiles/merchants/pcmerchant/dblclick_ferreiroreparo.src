@@ -1,0 +1,185 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include ":brainAI:npcCommands";
+include ":currency:include/currency";
+include ":attributes:attributes";
+include "include/imersao";
+include "include/epicConstants";
+include "include/epicPropNames";
+
+const REPAIR_COST_PER_TIER  := 5;
+const POOL_INIT_DIVISOR     := 2;
+const POOL_COST_BASE        := 11;
+const POOL_COST_DIVISOR     := 11;
+const ANIMATION_LOOPS       := 3;
+
+function FraseAleatoria(frases)
+	return frases[RandomInt(frases.size()) + 1];
+endfunction
+
+function FrasesSaudacao()
+	return array{
+		"Sou apenas um aprendiz, mas farei o que puder pelo seu equipamento.",
+		"Nao sou o melhor da forja, mas conserto bem o suficiente.",
+		"Mostre-me o que precisa de reparo, vou tentar.",
+		"Ainda estou aprendendo o oficio... mas vamos la."
+	};
+endfunction
+
+function FrasesSucesso()
+	return array{
+		"Pronto! Esta como novo... bem, quase.",
+		"Tome cuidado, este metal nao aguenta para sempre.",
+		"Espero que dure mais umas batalhas.",
+		"Feito. Volte se precisar de mim novamente."
+	};
+endfunction
+
+function ConfigContemObjtype(cfg_path, objtype)
+	var cfg := ReadConfigFile(cfg_path);
+	var elem := FindConfigElem(cfg, objtype);
+	if (!elem || elem == error || elem.errortext)
+		return 0;
+	endif
+	return 1;
+endfunction
+
+function ItemEhReparavel(item)
+	if (ConfigContemObjtype(":combat:itemdesc", item.objtype))
+		return 1;
+	endif
+	return ConfigContemObjtype(":DomesticWork:itemdesc", item.objtype);
+endfunction
+
+function GetTierMaterial(item)
+	var material := GetObjProperty(item, PROPNAME_MATERIAL);
+	if (material == error || !material)
+		return 1;
+	endif
+	var elem := ReadConfigFile(":crafting:config/resourceList")[material];
+	if (!elem)
+		return 1;
+	endif
+	var tier := CInt(elem.tier);
+	if (tier < 1)
+		tier := 1;
+	endif
+	return tier;
+endfunction
+
+function ValidarAlvo(npc, player, item)
+	if (!item.ISA(POLCLASS_ITEM) || !item.movable)
+		AI_Speak(npc, "Isso eu nao posso consertar.");
+		return 0;
+	endif
+	if (!Accessible(player, item))
+		AI_Speak(npc, "Nao alcanco esse item.");
+		return 0;
+	endif
+	if (!ItemEhReparavel(item))
+		AI_Speak(npc, "Trabalho apenas com armas, armaduras e vestes.");
+		return 0;
+	endif
+	if (item.hp == 0)
+		AI_Speak(npc, "Esta destruido alem do reparo.");
+		return 0;
+	endif
+	if (item.hp >= item.maxhp)
+		AI_Speak(npc, "Este item nao esta danificado.");
+		return 0;
+	endif
+	return 1;
+endfunction
+
+function GarantirPool(item, hisskill)
+	var pool := GetObjProperty(item, "reparos");
+	if (pool == error)
+		pool := hisskill / POOL_INIT_DIVISOR;
+		SetObjProperty(item, "reparos", pool);
+	endif
+	return pool;
+endfunction
+
+function CustoPoolPorReparo(hisskill)
+	return POOL_COST_BASE - (hisskill / POOL_COST_DIVISOR);
+endfunction
+
+function CobrarReparo(npc, player, preco)
+	if (CountCoins(player.backpack, SESTERTIUS) < preco)
+		AI_Speak(npc, "Custa " + preco + " moedas de cobre. Volte quando as tiveres.");
+		return 0;
+	endif
+	AI_Speak(npc, "Custa " + preco + " moedas de cobre. Vou comecar.");
+	if (!SpendCoin(player, preco, player.backpack, SESTERTIUS))
+		AI_Speak(npc, "Algo deu errado com as moedas...");
+		return 0;
+	endif
+	return 1;
+endfunction
+
+function AnimarMartelar(npc)
+	for i := 1 to ANIMATION_LOOPS
+		Imersao(npc, "mw");
+		sleep(2);
+	endfor
+endfunction
+
+function AplicarReparo(item, pool, custoPool)
+	item.hp := item.maxhp;
+	EraseObjProperty(item, "swings");
+	SetObjProperty(item, "reparos", pool - custoPool);
+endfunction
+
+function FazReparo(npc, player)
+	SendSysMessage(player, "Mostre o que devo consertar.");
+	var item := Target(player);
+	if (!item)
+		return;
+	endif
+
+	if (!ValidarAlvo(npc, player, item))
+		return;
+	endif
+
+	var hisskill   := EffectiveSkill(npc, METALWORKING);
+	var pool       := GarantirPool(item, hisskill);
+	var custoPool  := CustoPoolPorReparo(hisskill);
+	if (pool < custoPool)
+		AI_Speak(npc, "Este item esta exausto. Nao ha mais o que se fazer.");
+		return;
+	endif
+
+	var preco := GetTierMaterial(item) * REPAIR_COST_PER_TIER;
+	if (!CobrarReparo(npc, player, preco))
+		return;
+	endif
+
+	AnimarMartelar(npc);
+	AplicarReparo(item, pool, custoPool);
+	AI_Speak(npc, FraseAleatoria(FrasesSucesso()));
+endfunction
+
+program DblClickNerve(params)
+	var npc    := params[1];
+	var player := params[3].source;
+
+	while (npc)
+		if (player)
+			AI_Speak(npc, FraseAleatoria(FrasesSaudacao()));
+			FazReparo(npc, player);
+		endif
+
+		var ev := wait_for_event(500);
+		if (ev)
+			case (ev.type)
+				SYSEVENT_DOUBLECLICKED: player := ev.source;
+				NPCEVENT_DONE:          player := 0;
+			endcase
+		else
+			player := 0;
+		endif
+	endwhile
+endprogram

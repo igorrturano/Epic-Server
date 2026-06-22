@@ -11,6 +11,7 @@ include ":attributes:attributes";
 include ":attributes:skillCheck";
 include ":crafting:toolWear";
 include ":gathering:mining";
+include ":gathering:mineralcorpse";
 include ":gathering:meteoritos";
 include "include/say";
 include ":charactercreation:habilidades";
@@ -42,6 +43,10 @@ program OreMining(who, tool)
 
 	if (targ.item && IsMeteorite(targ.item))
 		return MeteoriteExtractFlow(who, tool, targ.item);
+	endif
+
+	if (targ.item && IsMineableCorpse(targ.item))
+		return MineCorpseFlow(who, tool, targ.item);
 	endif
 
 	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2)
@@ -248,4 +253,107 @@ function mineraRaroAleatorio(who)
 		SkillCheck(who, "Mining", -1);
 	endif
 	return achou;
+endfunction
+
+/*
+ * MineCorpseFlow(who, tool, corpse)
+ *
+ * Loop de mineração sobre cadáver de golem. Cada iteração consome 1 swing
+ * (independente de sucesso) e gasta stamina, igual mineração normal.
+ * Em 0 swings o cadáver é destruído pelo helper ConsumeMineavelSwing.
+ */
+function MineCorpseFlow(who, tool, corpse)
+	if (CoordinateDistance(who.x, who.y, corpse.x, corpse.y) > 2)
+		SendSysMessage(who, "Muito longe.");
+		return;
+	endif
+
+	var info := GetCorpseMineavelInfo(corpse);
+	if (info == error)
+		SendSysMessage(who, "Voce nao pode minerar isso.");
+		return;
+	endif
+
+	var my_x := who.x;
+	var my_y := who.y;
+	var my_facing := who.facing;
+
+	if (!CheckLoop(who, tool, my_x, my_y, my_facing))
+		SendSysMessage(who, "Você parou de minerar.");
+		return;
+	endif
+
+	while (corpse && GetCorpseMineavelSwings(corpse) > 0)
+		if (!MineCorpseSwing(who, tool, corpse, info, my_x, my_y, my_facing))
+			break;
+		endif
+		CheckToolWear(who, tool, "Mining");
+
+		var stamina_cost := 5;
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::EXTRACTOR_VIGOR))
+			stamina_cost := 3;
+		endif
+		if (AP_GetVital(who, "Stamina") < stamina_cost)
+			SendSysMessage(who, "Voce esta muito cansado para minerar.");
+			break;
+		endif
+		AP_ConsumeVital(who, "Stamina", stamina_cost);
+		sleep(3);
+	endwhile
+
+	SendSysMessage(who, "Você parou de minerar.");
+endfunction
+
+/*
+ * MineCorpseSwing(who, tool, corpse, info, my_x, my_y, my_facing)
+ *
+ * Executa um swing: 3 anims rápidas + skill check.
+ * Retorna 0 se deve interromper o loop, 1 se pode continuar.
+ */
+function MineCorpseSwing(who, tool, corpse, info, my_x, my_y, my_facing)
+	var i;
+	for (i := 0; i < 3; i := i + 1)
+		if (!CheckLoop(who, tool, my_x, my_y, my_facing))
+			return 0;
+		endif
+		if (!corpse)
+			return 0;
+		endif
+		PerformAction(who, MINING_ANIMATION);
+		PlaySoundEffect(who, MINING_SOUND);
+		sleep(1);
+	endfor
+
+	if (!corpse)
+		return 0;
+	endif
+
+	if (SkillCheck(who, "Mining", CInt(info.dif)) > 0)
+		var qty := CInt(info.qty_min) + RandomInt(CInt(info.qty_max) - CInt(info.qty_min) + 1);
+		var entregue := 0;
+		// Cria 1 a 1 pra suportar minérios não-stackable (ex.: mármore 0x8850).
+		// POL stacka automaticamente quando o tile é stackable.
+		var n;
+		for (n := 1; n <= qty; n := n + 1)
+			var minerio := CreateItemInBackPack(who, CInt(info.ore), 1);
+			if (minerio && !minerio.errortext)
+				minerio.movable := 1;
+				entregue := entregue + 1;
+			endif
+		endfor
+		if (entregue > 0)
+			SendSysMessage(who, "Você extrai " + CStr(entregue) + " de " + info.ore_nome + " do cadáver.");
+		else
+			SendSysMessage(who, "Você não consegue carregar mais " + info.ore_nome + ".");
+		endif
+	else
+		SendSysMessage(who, "Você lasca pedaços vazios do cadáver.");
+	endif
+
+	var remaining := ConsumeMineavelSwing(corpse);
+	if (remaining <= 0)
+		SendSysMessage(who, "O cadáver se desfaz em pó.");
+		return 0;
+	endif
+	return 1;
 endfunction

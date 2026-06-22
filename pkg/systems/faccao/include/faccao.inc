@@ -444,6 +444,16 @@ function RemMember(faccao, mobile)
    if (!mobile.isA(POLCLASS_MOBILE))
       mobile := SystemFindObjectBySerial(mobile, SYSFIND_SEARCH_OFFLINE_MOBILES);
    endif
+   // Limpa alias da faccao para o membro que esta saindo — evita que o nome
+   // de RP usado nesta faccao "vaze" se ele entrar em outra.
+   var aliases := faccao.GetProp("aliases");
+   if (aliases != error && aliases)
+      var key := CStr(mobile.serial);
+      if (aliases.exists(key))
+         aliases.erase(key);
+         faccao.SetProp("aliases", aliases);
+      endif
+   endif
    if (IsHonoraryMember(faccao, mobile))
       _RemHonoraryMember(faccao, mobile);
    else
@@ -668,6 +678,10 @@ function MoveOrTeleportToGuildPoint(dest)
     if (!dest) return 0; endif
     if (dest.realm && me.realm != dest.realm)
         MoveObjectToLocation(me, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+    elseif (CoordinateDistance(me.x, me.y, dest.x, dest.y) > 30)
+        // NPC longe demais do centro — RunTowardLocation nunca chega (ou trava
+        // contra obstaculos). Teleporta direto para nao ficar correndo eterno.
+        MoveObjectToLocation(me, dest.x, dest.y, dest.z, me.realm, MOVEOBJECT_FORCELOCATION);
     else
         RunTowardLocation(dest.x, dest.y);
     endif

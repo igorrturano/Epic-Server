@@ -96,7 +96,18 @@ function MobileTracking(who)
 			return;
 		endif
 
-		TrackGump(who, mobiles);
+		var categoria := CategoryFilterGump(who);
+		if (categoria == 0)
+			return;
+		endif
+
+		var filtrados := FilterMobsByCategory(mobiles, categoria);
+		if (len(filtrados) < 1)
+			SendSysMessage(who, "Nao ha nenhum(a) " + CategoryLabel(categoria) + " ao seu redor para ser seguida", 3, 660);
+			return;
+		endif
+
+		TrackGump(who, filtrados);
 
 	else
 		SendSysMessage(who, " Voce falhou ao estudar o local ", 3, 38);
@@ -126,6 +137,92 @@ function ItemTracking(who)
 	else
 		SendSysMessage(who, " Voce falhou ao estudar o local ", 3, 38);
 	endif
+endfunction
+
+// gump de filtro por categoria — escolhe entre Todos/Jogadores/Humanoides/Animais/Monstros
+function CategoryFilterGump(who)
+	var gump := GFCreateGump(50, 25);
+	GFResizePic(gump, 0, 25, 0x13BE, 300, 220);
+	GFResizePic(gump, 15, 40, 0xBB8, 270, 190);
+	GFTextLine(gump, 60, 50, 600, "Filtrar por categoria:");
+
+	GFTextLine(gump, 47, 80, 800, "Todos");
+	GFAddButton(gump, 30, 84, 2103, 2104, GF_CLOSE_BTN, 1);
+	GFTextLine(gump, 47, 100, 800, "Jogadores");
+	GFAddButton(gump, 30, 104, 2103, 2104, GF_CLOSE_BTN, 2);
+	GFTextLine(gump, 47, 120, 800, "Humanoides");
+	GFAddButton(gump, 30, 124, 2103, 2104, GF_CLOSE_BTN, 3);
+	GFTextLine(gump, 47, 140, 800, "Animais");
+	GFAddButton(gump, 30, 144, 2103, 2104, GF_CLOSE_BTN, 4);
+	GFTextLine(gump, 47, 160, 800, "Monstros");
+	GFAddButton(gump, 30, 164, 2103, 2104, GF_CLOSE_BTN, 5);
+
+	var ifres := GFSendGump(who, gump);
+	return ifres[0];
+endfunction
+
+// Humanoides: raças jogáveis Epic + bodies com paperdoll + humanoides selvagens
+// IsHuman/IsAnimal do bodyTable não são usados porque o datafile :body:body de categorias
+// está vazio na maioria dos shards Epic, jogando NPCs de facção em "Monstro"
+function IsHumanoidBody(g)
+	return g in {
+		// humanos + elfos + gárgulas (paperdoll)
+		400, 401, 402, 403, 605, 606, 607, 608, 666, 667, 694, 695, 987,
+		// raças Epic (1828-1835)
+		1828, 1829, 1830, 1831, 1832, 1833, 1834, 1835,
+		// humanoides selvagens comuns
+		1, 2, 3,                              // ogro/troll
+		7, 17, 41,                            // goblin
+		35, 36,                               // homem-lagarto
+		42, 43, 44,                           // homem-rato
+		78, 79, 80, 81, 82, 83, 84, 85, 86,   // orcs
+		245, 253, 255,                        // kobold
+		776, 795, 796, 999,                   // sahagin
+		154, 155, 156, 157                    // esqueletos humanoides
+	};
+endfunction
+
+function IsAnimalBody(g)
+	// faixa clássica UO de animais (200-298) + alguns aves/pequenos fora dela
+	if (g >= 200 && g <= 298)
+		return 1;
+	endif
+	return g in { 5, 6, 14, 51, 192, 193, 194 };
+endfunction
+
+// 1=Todos 2=Jogadores 3=Humanoides 4=Animais 5=Monstros
+function FilterMobsByCategory(mobiles, categoria)
+	if (categoria == 1)
+		return mobiles;
+	endif
+	var saida := array;
+	foreach mob in mobiles
+		var ehPlayer := CInt(GetObjProperty(mob, "createdate")) > 0;
+		var g := mob.graphic;
+		if (categoria == 2 && ehPlayer)
+			saida.append(mob);
+		elseif (categoria == 3 && !ehPlayer && IsHumanoidBody(g))
+			saida.append(mob);
+		elseif (categoria == 4 && !ehPlayer && IsAnimalBody(g) && !IsHumanoidBody(g))
+			saida.append(mob);
+		elseif (categoria == 5 && !ehPlayer && !IsHumanoidBody(g) && !IsAnimalBody(g))
+			saida.append(mob);
+		endif
+	endforeach
+	return saida;
+endfunction
+
+function CategoryLabel(categoria)
+	if (categoria == 2)
+		return "jogador";
+	elseif (categoria == 3)
+		return "humanoide";
+	elseif (categoria == 4)
+		return "animal";
+	elseif (categoria == 5)
+		return "monstro";
+	endif
+	return "criatura";
 endfunction
 
 // gump da lista de mobs

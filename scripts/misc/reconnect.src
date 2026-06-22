@@ -31,6 +31,9 @@ program core_reconnect(who)
 				Start_Script(":fezes:scripts/cheiro", array{who});
 			endif
 		endif
+	elseif (CStr(GetObjProperty(who, "descmodboss")) == "*Cheirando a fezes*")
+		EraseObjProperty(who, "descmodboss");
+		EraseObjProperty(who, "#cheiro_pid");
 	endif
 
 	if (who.cmdlevel <= 1)
