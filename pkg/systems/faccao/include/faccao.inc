@@ -668,6 +668,10 @@ function MoveOrTeleportToGuildPoint(dest)
     if (!dest) return 0; endif
     if (dest.realm && me.realm != dest.realm)
         MoveObjectToLocation(me, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+    elseif (CoordinateDistance(me.x, me.y, dest.x, dest.y) > 30)
+        // NPC longe demais do centro — RunTowardLocation nunca chega (ou trava
+        // contra obstaculos). Teleporta direto para nao ficar correndo eterno.
+        MoveObjectToLocation(me, dest.x, dest.y, dest.z, me.realm, MOVEOBJECT_FORCELOCATION);
     else
         RunTowardLocation(dest.x, dest.y);
     endif
