@@ -75,7 +75,7 @@ plugues. Isso mantém o escopo focado.
 - **Nada vence permanentemente — a deriva *é* o reset.** Por construção, isso é o
   Batman × Coringa: a física não deixa um polo aniquilar o outro. O conflito
   perpétuo é emergente, não imposto por regra.
-- A barra só se move **por ação de jogador** (ver §9, estoque-e-fluxo).
+- A barra só se move **por ação de jogador** (ver §10, estoque-e-fluxo).
 
 ---
 
@@ -97,7 +97,7 @@ A regra de ouro: **o que o Caos dá, a Ordem não compra, e vice-versa.**
 |---|---|---|
 | **Dá** | Ofensiva bruta (+hit, +dano, imune a veneno) **+ Essência do Vazio** (melhores materiais de craft, só existem com mundo corrompido) **+ exploração rende** (drops) | Sustento/resiliência (+cura, +Vontade, +DP) **+ reinos prosperam** **+ estabilidade** social/econômica |
 | **Custa** | Frágil em batalha aberta; caçado em terra ordeira | Sem burst, sem loot raro/Essência |
-| **Extremo = falha** | Mundo tomado por monstros empoderados (já no código) **+ pragas/terremotos nos reinos** *(gancho futuro, §8)* | **Estagnação econômica:** sem Essência, sem portais, sem craft de ponta. Seguro porém pobre — crafters/mercadores **pressionam por um caos controlado** |
+| **Extremo = falha** | Mundo tomado por monstros empoderados (já no código) **+ pragas/terremotos nos reinos** *(gancho futuro, §13)* | **Estagnação econômica:** sem Essência, sem portais, sem craft de ponta. Seguro porém pobre — crafters/mercadores **pressionam por um caos controlado** |
 
 Duas consequências elegantes:
 - **A moeda é não-conversível:** pra forjar o item supremo, *alguém* teve que
@@ -188,7 +188,7 @@ time".
 ## 8. Território: Templos × Portais *(a guerra simétrica)*
 
 O par simétrico do voidrift. Estruturas erguidas por jogadores são o **motor
-concreto** da barra (ver §9) e o **enclave local** (ver §10).
+concreto** da barra (ver §10) e o **enclave local** (ver §11).
 
 | | **Nó do Caos** | **Nó da Ordem** |
 |---|---|---|
@@ -207,7 +207,47 @@ concreto** da barra (ver §9) e o **enclave local** (ver §10).
 
 ---
 
-## 9. Como a barra enche: **estoque e fluxo, nunca instantâneo**
+## 9. Ciclo Dia/Noite & Atmosfera Grim-Dark
+
+A entropia do mundo **enverga o relógio**: o céu inteiro vira mostrador do pêndulo,
+e a noite traz horrores que o amanhecer dissolve.
+
+- **A proporção dia/noite escorrega com a barra** — ciclo total fixo em 4h (hoje
+  2h+2h em [daynight.cfg](pkg/systems/nature/config/daynight.cfg)). Escala:
+  **6 min deslocados por 10k de entropia**, teto de ±60 min.
+
+| Estado global | Noite | Dia |
+|---|---|---|
+| Caos máximo (−100k) | **3h** | 1h |
+| Neutro (0) | 2h | 2h |
+| Ordem máxima (+100k) | 1h | **3h** |
+
+- **Piso de 1h sagrado nos dois sentidos:** nunca há noite eterna nem dia eterno.
+  Mesmo no mundo mais santo sobra 1h de noite (a janela do insurgente do Caos); no
+  mais sombrio nasce 1h de sol (o respiro dos heróis). É a filosofia dos enclaves
+  (§11) levada pro relógio — ninguém é trancado fora do jogo.
+- **A noite pare sombras.** Com entropia negativa, além dos portais, **criaturas
+  sombrias ambientes spawnam à noite e somem ao amanhecer** (dia = Ordem/Luz, nunca
+  spawnam de dia). Quanto mais negativo o mundo, **mais numerosas e mais fortes**
+  (reusa os limiares de empoderamento global, §5/§13); mundo ordeiro: raras e
+  fracas.
+- **Auto-correção, não bola-de-neve:** os horrores da noite são exatamente o que a
+  Ordem caça pra empurrar o mundo de volta — matar undead/demônio/void já rende
+  entropia **positiva**. *A noite é quando a guerra se trava; o amanhecer é a
+  recompensa.* O pêndulo pulsa num ciclo diário.
+- **Você lê o mundo olhando pro céu:** noites longas e cheias de sombra = o mundo
+  está doente. Legibilidade total, atmosfera grim-dark.
+
+**Ganchos de código:** o `daynight.src` **já modula a duração do dia
+sazonalmente** (verão +20%, inverno −20%) — a entropia entra como o mesmo tipo de
+modificador, dirigido por `GlobalEntropy` (hoje a `nature` **não lê** entropia). Os
+spawners (`pkg/systems/spawnpoint`) ainda **não têm gate de horário** — o spawn
+noturno de sombras é o pedaço novo; há precedente no padrão "shift" dia/noite dos
+mercadores em [nature.inc](pkg/systems/nature/include/nature.inc).
+
+---
+
+## 10. Como a barra enche: **estoque e fluxo, nunca instantâneo**
 
 A pior versão é "cada ato soma um tanto pra sempre" (spammável, espetado, acumula
 infinito). A versão certa trata a barra como **reservatório alimentado por
@@ -224,7 +264,7 @@ fluxos**:
   0, que as estruturas têm que vencer. Sem estrutura de pé, o mundo cicatriza.
 - **Limitado nos dois sentidos:** cap global (corrigir o buraco; teto perto de
   ±60k/±100k, onde moram os limiares de monstro) + deriva + retornos decrescentes
-  perto do próprio polo (o rubber-band, §10). **Nunca "pontos pra sempre"** — é um
+  perto do próprio polo (o rubber-band, §11). **Nunca "pontos pra sempre"** — é um
   equilíbrio vivo.
 
 **Separação limpa de leituras** (responde a pergunta #6 da semente):
@@ -233,7 +273,7 @@ fluxos**:
 
 ---
 
-## 10. Balanceamento: anti bola-de-neve *(death spiral)*
+## 11. Balanceamento: anti bola-de-neve *(death spiral)*
 
 O defeito mortal de todo cabo-de-guerra: o mundo empodera quem ganha e enfraquece
 quem perde → o lado perdedor não revida → o mundo trava num polo → o pêndulo
@@ -265,7 +305,7 @@ momento.**
 
 ---
 
-## 11. Anti-exploit (farmar Caos → correr pra Ordem)
+## 12. Anti-exploit (farmar Caos → correr pra Ordem)
 
 O risco: derrubar o mundo no Caos pra farmar Essência, depois deixar tudo Ordem pra
 governar reinos — o melhor dos dois sem consequência. Duas travas:
@@ -284,7 +324,7 @@ drama emergente bom, não exploit silencioso.
 
 ---
 
-## 12. As camadas de efeito (existe / novo / gancho futuro)
+## 13. As camadas de efeito (existe / novo / gancho futuro)
 
 - **Direto no jogador — JÁ EXISTE, recalibrar:** trocar o eixo pra "mundo × meu
   time" (§5), remover auto-debuff de cura, baixar o tilt pra ~±20%, religar os
@@ -305,17 +345,21 @@ drama emergente bom, não exploit silencioso.
 
 ---
 
-## 13. O core loop, de ponta a ponta
+## 14. O core loop, de ponta a ponta
 
 > **Estruturas** (templos × portais) **alimentam a barra** → a barra **inclina o
-> campo** (tilt ~20%, time-vs-mundo) → o tilt + **Essência/reinos** motivam os dois
-> lados → **rubber-band + enclaves** impedem a bola-de-neve → a **Regra do Batman**
-> e o **não-retorno** dão o peso emocional → a **deriva ao centro** garante a briga
-> eterna.
+> campo** (tilt ~20%, time-vs-mundo) **e enverga o céu** (noites longas no Caos,
+> §9) → o tilt + **Essência/reinos** motivam os dois lados → **rubber-band +
+> enclaves** impedem a bola-de-neve → a **Regra do Batman** e o **não-retorno** dão
+> o peso emocional → a **deriva ao centro** garante a briga eterna.
+
+Sobre esse loop de longo prazo, o **ciclo dia/noite (§9)** faz o pêndulo **pulsar
+diariamente:** a noite caótica pare sombras, os heróis as caçam até o amanhecer. A
+guerra se trava à noite; a recompensa é o sol.
 
 ---
 
-## 14. Escopo & fatiamento *(roadmap, não compromisso de implementar agora)*
+## 15. Escopo & fatiamento *(roadmap, não compromisso de implementar agora)*
 
 Esta é uma **visão**; o sistema é grande demais pra um plano só. Quando for
 implementar, fatiar (cada fatia = sua própria spec → plano):
@@ -325,6 +369,9 @@ implementar, fatiar (cada fatia = sua própria spec → plano):
 - **Fatia 2 — território & stakes:** Templos (§8); Essência do Vazio; a Regra do
   Batman (custo de assassinato + detecção gato-e-rato + jornada de morte); ponto de
   não-retorno + pacto fáustico.
+- **Fatia 2b — atmosfera (§9):** `GlobalEntropy` enverga o ciclo dia/noite em
+  `nature` (reusa o modificador sazonal de `daynight.src`); spawn noturno de sombras
+  com gate de horário + escala por entropia nos spawners.
 - **Fatia 3+ — ganchos:** efeitos nos reinos (depende de governança); religação
   fina com Encantador/Devoto.
 
@@ -338,11 +385,11 @@ Números (pontos/tick por estrutura, taxa de deriva, X do não-retorno, cap glob
 | # | Pergunta | Resposta |
 |---|---|---|
 | 1 | Polaridade / nomear polos | §1 — Caos(−)/Ordem(+), fixado pelo código + lore Radiância × Legião Caída |
-| 2 | Game-loop de pêndulo / o que reseta | §2, §9 — deriva ao centro É o reset; estruturas movem a barra |
+| 2 | Game-loop de pêndulo / o que reseta | §2, §10 — deriva ao centro É o reset; estruturas movem a barra |
 | 3 | Recompensa assimétrica | §4 — Caos: ofensiva+Essência+exploração; Ordem: sustento+reinos+estabilidade |
 | 4 | Dois extremos como falha | §4 — Caos: monstros+pragas; Ordem: estagnação econômica |
-| 5 | Efeito direto × indireto | §5, §12 — modelo time-vs-mundo; direto já existe, recalibrar |
-| 6 | Recurso de vocação × estado de mundo | §3, §9 — pessoal=deeds, global=território; alinhamento híbrido |
+| 5 | Efeito direto × indireto | §5, §13 — modelo time-vs-mundo; direto já existe, recalibrar |
+| 6 | Recurso de vocação × estado de mundo | §3, §10 — pessoal=deeds, global=território; alinhamento híbrido |
 
 ---
 
