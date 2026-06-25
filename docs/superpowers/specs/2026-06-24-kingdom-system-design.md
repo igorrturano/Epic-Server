@@ -115,32 +115,68 @@ decisão de especialização permanente.
 
 ---
 
-## 5. Construções — EM ABERTO
+## 5. Construções — Sistema de Lotes
 
-> ⚠️ **Pendente: conversa com a Cati.** Ela pensou num catálogo de ~50
-> construções. Com esse volume, a matemática de slots × territórios muda
-> completamente — especialização se preserva naturalmente sem precisar limitar
-> slots. Definir o catálogo completo e o número de slots antes de fechar esta
-> seção.
+*Design da Cati, integrado 2026-06-25.*
 
-**O princípio fixado:** prédio desbloqueia um **verbo** — uma ação que não
-existia antes no mundo, não um bônus passivo. Construções pequenas e específicas
-(Ferraria, Alfaiataria, Carpintaria isoladas) criam mais decisões reais do que
-8 prédios grandes.
+### Lotes por Baronia
 
-**Exemplos de categorias esperadas no catálogo completo:**
-- Produção por ofício (Ferraria, Alfaiataria, Carpintaria, Destilaria…)
-- Militar (Quartel, Estábulo, Torre de Vigia…)
-- Comercial (Mercado, Loja especializada, Porto…)
-- Arcano/Religioso (Templo, Scriptorium, Laboratório…)
-- Infraestrutura (Cemitério, Armazém, Celeiro…)
+Cada Baronia tem **10 lotes** de três tamanhos:
 
-Especialização forçada → jogadores visitam outras Baronias para acessar verbos
-que a deles não tem. Nenhuma Baronia é autossuficiente em verbos.
+| Tamanho | Quantidade |
+|---|---|
+| 30×30 | 2 |
+| 20×20 | 3 |
+| 15×15 | 5 |
 
-**Slots e territórios:** também em aberto até definir o catálogo. Por ora,
-referência de trabalho: **1 território por Baronia** (expansão territorial
-discutida separadamente com a equipe).
+O tamanho do lote determina o que cabe nele — a especialização é espacial, não
+só numérica. Com 17 prédios no catálogo e 10 lotes (3 já ocupados pelos prédios
+gratuitos), sobram 7 lotes livres para escolher de 14 opções: nunca dá pra ter
+tudo.
+
+### Prédios gratuitos (toda Baronia começa com estes)
+
+| Prédio | Função |
+|---|---|
+| **City Hall** | Interface de gestão do reino — o objeto de acesso à gestão_use |
+| **Taverna** | Ponto social, rumores, missões informais; gera renda de serviço |
+| **Banco** | Serviços financeiros *(pode ser cortado em feudos — banco da cidade NPC supre)* |
+
+### Catálogo de prédios construíveis
+
+Prédio desbloqueia um **verbo** — uma ação que não existia antes no mundo, não
+um bônus passivo. Receita de serviço vai integralmente ao Erário.
+
+| Prédio | Lote | Receita | Verbo desbloqueado |
+|---|---|---|---|
+| **Quartel** | 20×20 | — | Recrutar e estacionar guardas pagos pelo Erário |
+| **Prisão** | 20×20 | — | Prender jogadores e NPCs (sem prisão, guardas atacam mas não encarceram) |
+| **Área Residencial** | 20×20 | aluguel | Housing — jogadores têm casa dentro do reino |
+| **Área Comercial** | 20×20 | aluguel | Lojas de jogador, Ordens de Compra de reino |
+| **Hospital** | ? | — | Tratar eventos de praga (domínio do Medicus); cura de campo |
+| **Tribunal** | ? | — | Julgar crimes formalmente — liga ao Lictor e ao sistema de leis |
+| **Correios** | ? | por carta | Comunicação formal entre reinos; cartas com taxa |
+| **Casa de Leilões** | ? | taxa | Leilão público de itens entre jogadores |
+| **Cemitério** | ? | aluguel | Rituais de ressurreição com custo reduzido |
+| **Área Rural** | ? | produção | Agricultura e matérias-primas — gera materiais comuns em escala |
+| **Templo** | 30×30 | — | Rituais de entropia em escala + cerimônias sociais (casamento, funeral): spawna itens da cerimônia e toca sinos no reino todo |
+| **Biblioteca** | ? | assinatura semanal | Acesso a livros do mundo inteiro; card semanal |
+| **Docas** | ? | por travessia | Barcos para travessias longas — mobilidade entre reinos costeiros |
+| **Teatro** | ? | — | RP atmosférico: apaga luzes, acende palco, abre cortinas — Story Rich sem texto |
+
+*Tamanhos de lote dos prédios ? a definir com a Cati na implementação.*
+
+### Economia dos prédios — Erário bidirecional
+
+O Erário não é só um buraco: tem **dois fluxos**.
+
+- **Entrada passiva:** aluguel (residências, comércio, cemitério) + taxas de
+  serviço (correios, biblioteca, docas, taverna)
+- **Saída recorrente:** manutenção de prédios + salários da corte + guarnição
+
+Money sink na **construção** (custo alto único); semi-autossustentável depois
+disso. Reino bem construído e ativo se paga; reino negligenciado sangra o Erário
+e a Legitimidade juntos.
 
 ---
 
