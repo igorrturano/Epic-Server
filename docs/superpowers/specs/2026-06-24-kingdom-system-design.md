@@ -115,25 +115,32 @@ decisão de especialização permanente.
 
 ---
 
-## 5. Construções — 3 de 8 slots
+## 5. Construções — EM ABERTO
 
-Cada Baronia escolhe **3 dos 8 tipos de prédio**. Prédio desbloqueia um
-**verbo** — uma ação que não existia antes no mundo para aquele jogador, não um
-bônus passivo.
+> ⚠️ **Pendente: conversa com a Cati.** Ela pensou num catálogo de ~50
+> construções. Com esse volume, a matemática de slots × territórios muda
+> completamente — especialização se preserva naturalmente sem precisar limitar
+> slots. Definir o catálogo completo e o número de slots antes de fechar esta
+> seção.
 
-| Prédio | Verbo desbloqueado |
-|---|---|
-| **Forja Real** | Acoplar Essências do Vazio tier alto em equipamentos |
-| **Mercado** | Postar Ordens de Compra de reino (NPC lojista com estoque exclusivo) |
-| **Templo** | Realizar rituais de entropia em escala (erguer/purgar portais grandes) |
-| **Quartel** | Recrutar guarnição paga pelo Erário (defende em cerco) |
-| **Laboratório** | Craftar consumíveis avançados (poções, dispositivos alquímicos) |
-| **Torre de Vigia** | Revelar território novo no mapa (reduz fog of war) |
-| **Porto / Rota Comercial** | Abrir rota com outra Baronia — fluxo passivo do material exclusivo dela |
-| **Cemitério** | Ritual de ressurreição com custo reduzido + acesso ao submundo como gameplay |
+**O princípio fixado:** prédio desbloqueia um **verbo** — uma ação que não
+existia antes no mundo, não um bônus passivo. Construções pequenas e específicas
+(Ferraria, Alfaiataria, Carpintaria isoladas) criam mais decisões reais do que
+8 prédios grandes.
+
+**Exemplos de categorias esperadas no catálogo completo:**
+- Produção por ofício (Ferraria, Alfaiataria, Carpintaria, Destilaria…)
+- Militar (Quartel, Estábulo, Torre de Vigia…)
+- Comercial (Mercado, Loja especializada, Porto…)
+- Arcano/Religioso (Templo, Scriptorium, Laboratório…)
+- Infraestrutura (Cemitério, Armazém, Celeiro…)
 
 Especialização forçada → jogadores visitam outras Baronias para acessar verbos
 que a deles não tem. Nenhuma Baronia é autossuficiente em verbos.
+
+**Slots e territórios:** também em aberto até definir o catálogo. Por ora,
+referência de trabalho: **1 território por Baronia** (expansão territorial
+discutida separadamente com a equipe).
 
 ---
 
@@ -165,12 +172,21 @@ Tribunal Arcano no lore de Aigla.*
 
 ## 7. Eventos Semanais — Motor de Conteúdo
 
-A cada semana o reino sorteia **1–3 eventos** do pool. O cargo relevante faz a
-rolagem: `skill do conselheiro + d100 vs DC do evento`.
+### Princípio: Story Rich ≠ Text Rich
 
-**Falhar não gera penalidade abstrata — spawna conteúdo real no mundo:**
+O mundo conta a história — o jogador não lê sobre um problema, ele *encontra*
+o problema no mundo. Sem telas de burocracia, sem notificações de stat.
 
-| Cargo que falhou | Conteúdo que spawna |
+### Fluxo passivo (padrão)
+
+A cada semana o reino resolve **1–3 eventos** automaticamente. O cargo relevante
+faz a rolagem silenciosa: `skill do conselheiro + d100 vs DC do evento`. O
+jogador nunca vê essa rolagem acontecer.
+
+- **Rolagem bem-sucedida:** nada muda. O mundo continua estável.
+- **Rolagem falha:** o mundo muda. O jogador *descobre* o problema explorando.
+
+| Cargo que falhou | Conteúdo que spawna no mundo |
 |---|---|
 | Lictor | Acampamento de bandidos no território da Baronia |
 | Medicus | NPC portador de praga aparece na cidade |
@@ -179,7 +195,38 @@ rolagem: `skill do conselheiro + d100 vs DC do evento`.
 | Speculator | Agente inimigo infiltrado, evento de sabotagem iminente |
 | Quaestor | Crise de recursos — produção cai por X dias |
 
-**Os jogadores resolvem → conteúdo some. Ignoram → Legitimidade cai.**
+**Os jogadores resolvem o conteúdo no mundo → problema some. Ignoram →
+Legitimidade cai.**
+
+### Modo narrativo (opt-in)
+
+O Barão pode ativar **modo narrativo** para qualquer cargo. Quando um evento
+daquele domínio é sorteado, uma notificação curta aparece *antes* da rolagem
+com uma situação e 2–3 escolhas:
+
+> *"Um viajante encapuzado chegou às muralhas pedindo abrigo. Diz ser mercador
+> de Aigla."*
+>
+> **[ Dar abrigo ]  [ Barrar a entrada ]  [ Interrogar primeiro ]**
+
+A escolha **não substitui a rolagem** — ela define o *perfil da consequência*:
+
+| Escolha | Sucesso na rolagem | Falha na rolagem |
+|---|---|---|
+| Dar abrigo | Espião entrega intel sobre reino rival | Espião rouba segredos do reino |
+| Barrar entrada | Risco evitado, nada acontece | Incidente diplomático com origem do espião |
+| Interrogar | Identidade revelada, vira aliado | Ele foge e avisa o rival |
+
+O resultado não é memorizável: a escolha define o *risco*, não o *resultado*.
+Escolher "Interrogar" é sempre mais arriscado e mais recompensador que "Barrar"
+— é tolerância ao risco, não decoreba da resposta certa.
+
+### Auto-management
+
+Barões que não querem gerenciar eventos manualmente deixam tudo no **modo
+passivo**. O sistema rola silenciosamente e o mundo muda sem interrupção. O
+Barão presente em modo narrativo tem vantagem marginal sobre o Barão ausente —
+não uma punição ao absenteísmo, mas um bônus ao engajamento.
 
 A dificuldade dos eventos escala com o **estado de entropia global**:
 - Mundo em Ordem → DCs menores, eventos mais manejáveis
@@ -315,8 +362,8 @@ Este é um doc de visão. Quando for implementar, fatiar em specs menores:
   de Baronia; cidadania/juramento
 - **Fatia 2 — Corte + Eventos:** 9 cargos com atribuição; relógio semanal de
   eventos; spawn de conteúdo por falha
-- **Fatia 3 — Construções:** 8 tipos de prédio; sistema de 3 slots; verbos
-  desbloqueados
+- **Fatia 3 — Construções:** catálogo completo (definir com Cati); sistema de
+  slots; verbos desbloqueados
 - **Fatia 4 — Território e Materiais:** claims de área; geração de materiais
   comuns e exclusivos por bioma
 - **Fatia 5 — Conflito e Sabotagem:** escada espionagem→saque→guerra; loop
