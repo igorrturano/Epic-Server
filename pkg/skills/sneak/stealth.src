@@ -37,7 +37,7 @@ function _GrantStealthSteps(who, skill)
 	if (mw.HasAbility(ABILITY_ID::ESPREITA_SELVAGEM))
 		steps := Cint(steps * 2.0);
 	endif
-	if (mw.HasAbility(ABILITY_ID::SMOKE_SCREEN))
+	if (mw.HasAbility(ABILITY_ID::SMOKE_SCREEN) || mw.HasAbility(ABILITY_ID::ARSENAL_SOMBRIO))
 		steps := steps * 2;
 	endif
 	if (InDarkness(who))
