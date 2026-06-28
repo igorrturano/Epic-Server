@@ -76,6 +76,27 @@ carreira.
 - **Trava generativa: ≤7 vocações × ~3 árvores.** Ideia nova cabe numa célula
   existente ou é flavor dentro de uma árvore.
 
+## O jogo ensina a si mesmo
+
+> Nenhuma informação sobre mecânica, sistema, habilidade ou penalidade existe
+> fora do jogo. Nem wiki, nem manual, nem mensagem de erro sem saída.
+
+Cada sistema, escolha e habilidade deve expor, no próprio jogo, **o que faz, como usar e o que ganha**. Tooltips, descrições de habilidade e mensagens de feedback são parte do design — não documentação secundária.
+
+**Mensagens de falha são guias, não punições.**
+
+| ❌ Errado — frustra | ✅ Certo — orienta |
+|---|---|
+| "A escuridão impede seu acerto." | "Você não consegue mirar — use uma lanterna, flechas oleadas, ou aguarde a luz do dia." |
+| "Você não pode fazer isso agora." | "Esta habilidade requer posição furtiva — pressione \[hide\] primeiro." |
+| "Ataque bloqueado." | "A armadura pesada absorveu o golpe — tente uma arma perfurante ou um ponto de vulnerabilidade." |
+
+A regra prática: se a mensagem não diz **o que o jogador pode fazer a seguir**, ela não está pronta. Toda mensagem de falha completa a frase "Para ter sucesso, você precisa de…"
+
+Isso inclui o sistema de tutoriais: nenhum tutorial pode ser pré-requisito pra jogar. Tutorial é conteúdo opcional que aprofunda — o jogo funciona sem ele, com feedback suficiente pra aprender jogando.
+
+---
+
 ## Como usar (rode toda decisão por aqui)
 
 1. **Paga aluguel?** (diversão ou clareza)
@@ -83,5 +104,6 @@ carreira.
 3. **Cabe na trava** (≤7 × ~3) ou é flavor dentro de uma árvore existente?
 4. **Soma ou multiplica?** Prefira somar dentro do que já existe a criar peça
    nova isolada.
+5. **O jogo ensina isso?** Tooltips, descrições e mensagens de falha explicam como progredir?
 
-Passou nos quatro, vai. Não passou, corta ou repensa até caber.
+Passou nos cinco, vai. Não passou, corta ou repensa até caber.

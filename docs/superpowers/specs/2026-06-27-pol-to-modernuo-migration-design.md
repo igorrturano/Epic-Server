@@ -488,7 +488,56 @@ Missing key → English fallback, logged as warning.
 
 ---
 
-## 10. Fora de escopo (specs separados)
+## 10. Mandatos de design transversais
+
+Estas regras aplicam a **todo** código migrado ou criado no ModernUO. Não são opcionais.
+
+### O jogo ensina a si mesmo
+
+Toda mensagem de falha, tooltip, descrição de habilidade e feedback de sistema deve conter **o que o jogador faz a seguir**. Informação passiva que apenas enuncia o bloqueio é inacabada.
+
+**Regra de implementação:** `FailureMessage` nunca existe sem `GuidanceHint`. No C#, isso se traduz em: toda mensagem de falha de sistema (combat, abilities, craft, navigation) passa por um método que exige os dois campos:
+
+```csharp
+// Game.Core/Feedback/Models/ActionFeedback.cs
+public readonly record struct ActionFeedback(
+    string Failure,    // "You cannot see through the darkness."
+    string Guidance    // "Use a lantern, an oiled arrow, or wait for daylight."
+);
+```
+
+Nenhuma `ActionFeedback` com `Guidance` vazio compila. O campo pode aceitar `string?` mas o sistema de despacho (`FeedbackService`) faz assert em runtime que guidance não é null ou empty.
+
+**Exemplo concreto — DarknessHitModifier:**
+
+```
+❌ "A escuridão impede seu acerto."
+✅ "Você não consegue mirar no escuro — use uma lanterna, flechas oleadas, ou aguarde o amanhecer."
+```
+
+### Tooltips e descrições in-game são obrigatórios
+
+Todo sistema, habilidade, status e escolha que aparece na UI deve ter:
+- **Nome claro** — sem abreviações internas
+- **O que faz** — em uma linha
+- **Como ativar** — requisito, custo, como acionar
+- **O que ganha** — valores concretos, não vagos ("aumenta dano" → "adiciona +10–15 de dano de fogo por 8 segundos")
+
+Isso é implementado como campos obrigatórios nas definições de abilities/stats em `Game.Core`, não como strings avulsas em arquivos de configuração.
+
+### Tom: orientação, não punição
+
+Toda mensagem de feedback segue o padrão: **descreve o estado** → **diz o que fazer**.
+
+| ❌ | ✅ |
+|---|---|
+| "Ataque bloqueado." | "Golpe absorvido pela armadura — tente arma perfurante ou flanquear." |
+| "Você está muito pesado." | "Carga máxima atingida — deixe itens no banco ou use um baú de guilda." |
+| "Habilidade em cooldown." | "Ainda recarregando — disponível em 4s." |
+
+---
+
+## 11. Fora de escopo (specs separados)
 
 1. **Design final do combat rework** — decisão em andamento; Step 4 provê o ambiente de teste.
 2. **Design final do craft rework** — quase completo redesign; Step 7 quando o design estiver fechado.
