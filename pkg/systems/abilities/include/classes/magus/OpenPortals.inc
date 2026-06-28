@@ -68,7 +68,7 @@ function _CreatePortalGump(mobile, arcana)
     endif
 
     if (!portals)
-        portals := struct{};
+        portals := dictionary{};
         SetObjProperty(mobile, "portals", portals);
     endif
 
@@ -132,15 +132,25 @@ function _MarkPortal(mobile, portalNumber)
     endif
 
     var portalName := "portal" + CStr(portalNumber);
-    portals[portalName].x := targ.x;
-    portals[portalName].y := targ.y;
-    portals[portalName].z := targ.z;
-    portals[portalName].r := mobile.realm;
-    portals[portalName].created := 1;
+
+    var portalInfo := portals[portalName];
+    if (!portalInfo)
+        portalInfo := struct{};
+    endif
+
+    portalInfo.x := targ.x;
+    portalInfo.y := targ.y;
+    portalInfo.z := targ.z;
+    portalInfo.r := mobile.realm;
+    portalInfo.created := 1;
 
     var name := RequestGump(mobile, "Deseja adicionar um nome ao portal?");
-    portals[portalName].desc := name;
+    if (!name || name == error)
+        name := "Portal " + CStr(portalNumber);
+    endif
+    portalInfo.desc := name;
 
+    portals[portalName] := portalInfo;
     SetObjProperty(mobile, "portals", portals);
     PlayStationaryEffect(targ.x, targ.y, targ.z, 0x6D70, 0, 40, 0, mobile.realm);
     PlaySoundEffect(mobile, 0x1f0);
@@ -158,6 +168,10 @@ function _SetDestination(tile, x, y, z, realm)
         realm := CStr(realm),
         race := "all"
     };
+    SetObjProperty(tile, "DestX", CInt(x));
+    SetObjProperty(tile, "DestY", CInt(y));
+    SetObjProperty(tile, "DestZ", CInt(z));
+    SetObjProperty(tile, "DestRealm", CStr(realm));
     return SetObjProperty(tile, "Destination", coords);
 endfunction
 
@@ -171,17 +185,34 @@ function _OpenPortal(mobile, portalNumber, arcana)
         return 0;
     endif
 
-    // Create telepad at player location
-    var tile := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, "telepad", 1, mobile.realm);
-    if (!tile)
-        Message("Nao foi possivel criar o portal.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+    // NOVA PROTEÇÃO: Verifica se as coordenadas estão zeradas (bugadas)
+    if (portal.x == 0 && portal.y == 0)
+        Message("A localizacao salva foi invalida, tente marcar novamente o local.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
         return 0;
     endif
 
-    // Set destination
-    _SetDestination(tile, portal.x, portal.y, portal.z, portal.r);
+    // Cria o portal de IDA (no pé do jogador)
+    var tileIda := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, "telepad", 1, mobile.realm);
+    if (!tileIda)
+        Message("Nao foi possivel criar o portal de ida.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+        return 0;
+    endif
 
-    // Calculate portal duration
+    // Cria o portal de VOLTA (no destino marcado)
+    var tileVolta := CreateItemAtLocation(portal.x, portal.y, portal.z, "telepad", 1, portal.r);
+    if (!tileVolta)
+        DestroyItem(tileIda); // Limpa o de ida se o de volta falhar (ex: local bloqueado)
+        Message("Nao foi possivel abrir o portal no destino.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+        return 0;
+    endif
+
+    // Configura os destinos (Cruzados)
+    _SetDestination(tileIda, portal.x, portal.y, portal.z, portal.r);
+    _SetDestination(tileVolta, mobile.x, mobile.y, mobile.z, mobile.realm);
+
+    Detach();
+
+    // Calcula a duração do portal
     var duration := CInt(arcana / 10);
     if (duration < 5)
         duration := 5;
@@ -190,55 +221,79 @@ function _OpenPortal(mobile, portalNumber, arcana)
         duration := 60;
     endif
 
-    // Effects
-    PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255, 0, mobile.realm);
-    PlayStationaryEffect(portal.x, portal.y, portal.z, 0x0DDA, 0, 255, 0, portal.r);
+    // Efeitos Iniciais
+    PlayStationaryEffect(tileIda.x, tileIda.y, tileIda.z, 0x0DDA, 0, 255, 0, tileIda.realm);
+    PlayStationaryEffect(tileVolta.x, tileVolta.y, tileVolta.z, 0x0DDA, 0, 255, 0, tileVolta.realm);
     PlaySoundEffect(mobile, 0x1f2);
 
     Message($"Portal para '{portal.desc}' aberto por {duration}s!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(mobile);
 
-    // Wait and refresh effects
+    // Espera e renova os efeitos visuais
     sleep(duration / 3);
-    PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255, 0, mobile.realm);
-    PlayStationaryEffect(portal.x, portal.y, portal.z, 0x0DDA, 0, 255, 0, portal.r);
+    PlayStationaryEffect(tileIda.x, tileIda.y, tileIda.z, 0x0DDA, 0, 255, 0, tileIda.realm);
+    PlayStationaryEffect(tileVolta.x, tileVolta.y, tileVolta.z, 0x0DDA, 0, 255, 0, tileVolta.realm);
 
     sleep(duration / 3);
-    PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255, 0, mobile.realm);
-    PlayStationaryEffect(portal.x, portal.y, portal.z, 0x0DDA, 0, 255, 0, portal.r);
+    PlayStationaryEffect(tileIda.x, tileIda.y, tileIda.z, 0x0DDA, 0, 255, 0, tileIda.realm);
+    PlayStationaryEffect(tileVolta.x, tileVolta.y, tileVolta.z, 0x0DDA, 0, 255, 0, tileVolta.realm);
 
     sleep(duration / 3);
 
-    DestroyItem(tile);
+    // Destrói AMBOS os portais
+    DestroyItem(tileIda);
+    DestroyItem(tileVolta);
     Message("O portal se fechou.", Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
 
     return 1;
 endfunction
 
 function _OpenNpcPortal(npc)
-    var tile := CreateItemAtLocation(npc.x, npc.y, npc.z, "telepad", 1, npc.realm);
-    if (!tile)
-        return 0;
-    endif
-
+    // 1. Sorteia o destino
     var destX := RandomIntMinMax(500, 2000);
     var destY := RandomIntMinMax(500, 2000);
     var destZ := GetWorldHeight(destX, destY, npc.realm);
 
-    _SetDestination(tile, destX, destY, destZ, npc.realm);
+    // NOVA PROTEÇÃO: Verifica se as coordenadas estão zeradas
+    if (destX == 0 && destY == 0)
+        return 0; // O NPC falha silenciosamente e a AI dele tenta usar outra habilidade
+    endif
 
-    PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255, 0, npc.realm);
-    PlayStationaryEffect(destX, destY, destZ, 0x0DDA, 0, 255, 0, npc.realm);
+    // 2. Cria o portal de IDA (no pé do NPC)
+    var tileIda := CreateItemAtLocation(npc.x, npc.y, npc.z, "telepad", 1, npc.realm);
+    if (!tileIda)
+        return 0;
+    endif
+
+    // 3. Cria o portal de VOLTA (no destino aleatório)
+    var tileVolta := CreateItemAtLocation(destX, destY, destZ, "telepad", 1, npc.realm);
+    if (!tileVolta)
+        DestroyItem(tileIda); // Se falhar em criar o destino, apaga a ida para não gerar lixo
+        return 0;
+    endif
+
+    // 4. Configura os destinos (Cruzados)
+    _SetDestination(tileIda, destX, destY, destZ, npc.realm);
+    _SetDestination(tileVolta, npc.x, npc.y, npc.z, npc.realm);
+
+    Detach();
+
+    // 5. Efeitos Iniciais
+    PlayStationaryEffect(tileIda.x, tileIda.y, tileIda.z, 0x0DDA, 0, 255, 0, npc.realm);
+    PlayStationaryEffect(tileVolta.x, tileVolta.y, tileVolta.z, 0x0DDA, 0, 255, 0, npc.realm);
     PlaySoundEffect(npc, 0x1f2);
 
     sleep(10);
 
-    PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255, 0, npc.realm);
-    PlayStationaryEffect(destX, destY, destZ, 0x0DDA, 0, 255, 0, npc.realm);
+    // 6. Renova os efeitos
+    PlayStationaryEffect(tileIda.x, tileIda.y, tileIda.z, 0x0DDA, 0, 255, 0, npc.realm);
+    PlayStationaryEffect(tileVolta.x, tileVolta.y, tileVolta.z, 0x0DDA, 0, 255, 0, npc.realm);
 
     sleep(10);
-    sleep(10);
+    sleep(10); // Segue o tempo original do seu script (30s no total)
 
-    DestroyItem(tile);
+    // 7. Destrói AMBOS os portais
+    DestroyItem(tileIda);
+    DestroyItem(tileVolta);
 
     return 1;
 endfunction
