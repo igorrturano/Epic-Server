@@ -11,10 +11,11 @@ calibragem ficam marcados como "a sintonizar no playtest".*
 
 ## A ideia em uma frase
 
-Entropia deixa de ser um medidor de canto e vira o **eixo Ordem × Caos do mundo
-inteiro** — um pêndulo de cabo-de-guerra que conecta vocações, território e
-economia, e cria um conflito perpétuo estilo **Batman × Coringa**: nenhum lado
-vence pra sempre, e a briga é o jogo.
+Entropia deixa de ser um medidor de canto e vira o **eixo narrativo do mundo** —
+a tensão entre a natureza caótica da realidade e o esforço humano de construir
+civilização em cima dela. O Caos não é uma facção: é o estado natural do mundo.
+A Ordem não é um time: é o ato contínuo de resistir a esse estado. Alguns jogadores
+resistem. Outros abraçam. E o mundo responde.
 
 ---
 
@@ -70,12 +71,18 @@ O **coração do design é a barra global**; as vocações, o craft e o territó
 plugues. Isso mantém o escopo focado.
 
 ### Física da barra
-- A barra global tem **cap** (a corrigir) e uma **deriva lenta ao centro**
-  (cicatrização: o mundo sara sozinho no longo prazo sem ação).
-- **Nada vence permanentemente — a deriva *é* o reset.** Por construção, isso é o
-  Batman × Coringa: a física não deixa um polo aniquilar o outro. O conflito
-  perpétuo é emergente, não imposto por regra.
-- A barra só se move **por ação de jogador** (ver §10, estoque-e-fluxo).
+- A barra global tem **cap** (a corrigir) e uma **inclinação natural pro Caos** —
+  sem ação, o mundo deteriora lentamente. Entropia é o estado de repouso da
+  realidade; civilização é o esforço que a contraria.
+- **A Ordem nunca descansa.** O mundo não "sara sozinho" — ele é segurado pela
+  ação contínua dos que resistem. A deriva puxa levemente pro Caos, não pro neutro.
+  O piso de repouso fica em torno de −20k a −30k (leve corrupção ambiental: undead
+  presentes, noites um pouco mais longas, fronteira sempre tensa).
+- **Nada vence permanentemente.** O cap garante que o mundo não afunda além do
+  jogável; a resistência humana garante que não fica travado no máximo Caos. O
+  conflito perpétuo é emergente.
+- **A barra se move por ação — humana ou ambiental** (ver §10, estoque-e-fluxo).
+  Portais abertos empurram passivamente. Estruturas da Ordem seguram ativamente.
 
 ---
 
@@ -86,6 +93,13 @@ plugues. Isso mantém o escopo focado.
 - **A vocação inclina, não trava:** o **Encantador** (reger o sem-mente) sangra
   Caos por design; o **Devoto / Caçador de Demônios** puxa Ordem. Qualquer um pode
   ir pra qualquer lado — a vocação só muda a *facilidade* de cada polo.
+- **Duas relações com o mundo, não dois times:**
+  - **Jogador da Ordem:** resiste à natureza do mundo. Sustenta civilização contra
+    uma força maior do que qualquer indivíduo. Nunca "venceu" — está sempre lutando.
+  - **Jogador do Caos:** abraçou uma verdade sobre o mundo que a maioria recusa.
+    Não é um vilão de torcida que "escolheu o lado vermelho" — é alguém que entendeu
+    o que o mundo *realmente é* e fez um pacto com isso. Surfa a entropia em vez de
+    nadar contra ela. O mundo caótico não é o seu inimigo: é o seu habitat.
 
 ---
 
@@ -182,6 +196,11 @@ time".
   pacto com o deus do Caos e ganha poder real — afinidade com o Vazio, habilidades
   novas, a Legião Caída. Virar condenado é **escolha de poder pela alma** (o arco
   do Campeão do Caos), não um estado-de-fracasso.
+- **Criaturas do Caos param de te atacar.** Undead, demônios e void reconhecem a
+  alma condenada como kin — não como presa. Você atravessa áreas corrompidas, portais
+  ativos e zonas de voidrift sem ser hostilizado. Não é magia nem habilidade: é
+  reconhecimento. O mundo caótico te aceita como parte de si. A troca é permanente
+  — a Ordem também te reconhece: NPCs recuam, guardiões hostilem, bênçãos rejeitam.
 
 ---
 
@@ -273,35 +292,43 @@ fluxos**:
 
 ---
 
-## 11. Balanceamento: anti bola-de-neve *(death spiral)*
+## 11. Balanceamento: por que não precisa de times iguais
 
-O defeito mortal de todo cabo-de-guerra: o mundo empodera quem ganha e enfraquece
-quem perde → o lado perdedor não revida → o mundo trava num polo → o pêndulo
-morre. Quatro engrenagens impedem isso:
+O modelo de cabo-de-guerra pressupõe população equilibrada. O Epic não tem isso
+(~90% Ordem / ~10% Caos) — e **não precisa ter**. O equilíbrio não é demográfico;
+é estrutural.
+
+**O ambiente É o time do Caos.** Portais abrem passivamente, criaturas spawnam à
+noite, a entropia drena sem supervisão. Os 10% de jogadores Caos não são um exército
+rival — são **amplificadores** de uma força que já existe independente deles. O
+confronto real é: **90% de humanos vs o mundo inteiro que quer afundar no Caos**,
+com 10% de humanos que escolheram surfar a onda em vez de nadar contra ela.
+
+Quatro engrenagens mantêm o sistema vivo:
 
 1. **Rubber-band — o lado escasso pesa mais.** Quanto mais o mundo já pende pro seu
    lado, **menos** cada ato seu move a barra; quanto mais hostil, **mais** você
-   move. Uma célula pequena de Caos ameaça de verdade um servidor dominado pela
-   Ordem. (É a deriva-ao-centro com outro nome: os extremos resistem sozinhos, o
-   comeback é sempre viável.)
+   move. Um jogador Caos solitário num mundo ordeiro move a barra mais do que
+   dez num mundo já corrompido. Os extremos resistem sozinhos; o comeback é sempre
+   viável.
 2. **O debuff muda seu MODO, não seu chão.** O caótico num mundo ordeiro não é "50%
    mais fraco em tudo" — ele vai pra **clandestinidade/guerrilha/sombra** (onde o
    jogo de detectar × disfarçar é o gameplay). Fraco em batalha aberta, perigoso na
    subversão. Underdog continua *divertido*.
 3. **O tilt é polegar na balança, não condição de vitória.** Modificador de mundo
-   com **teto baixo (~±20%, não os ±50% atuais)**. Quem decide a luta é skill/build;
-   a entropia é a inclinação que faz valer a pena empurrar a barra, sem virar o
-   perdedor em kill grátis.
+   com **teto baixo (~±20%)**. Quem decide a luta é skill/build; a entropia é a
+   inclinação que faz valer a pena empurrar a barra, sem virar o perdedor em kill
+   grátis.
 4. **Enclaves locais — o underdog sempre tem um pé.** Mesmo num mundo ordeiro, o
    Caos **derruba o templo da vila** e abre seu bolsão de poder local; a Ordem
    **purga** o portal ou ergue **santuário** em terra caótica. A briga vira
    territorial; ninguém fica de mãos atadas.
 
-Resultado: o caótico num mundo ordeiro vira **insurgente com enclaves, cujos atos
-pesam o dobro, num campo inclinado só ~20%** — não desestimulado, mas empurrado pro
-papel que um agente do Caos *deveria* ter. Simétrico pra Ordem no mundo caótico (a
-resistência, o último bastião). O desequilíbrio vira **a fantasia de poder daquele
-momento.**
+Resultado: **não existe bola-de-neve porque os lados não são simétricos.** A Ordem
+pode "vencer" e o mundo ainda vai deteriorar à noite, ainda vai ter portais abrindo,
+ainda vai exigir manutenção ativa. A vitória da Ordem não é um estado — é um esforço
+contínuo. O Caos não precisa "ganhar": precisa só existir, porque o mundo já puxa
+nessa direção.
 
 ---
 
@@ -347,11 +374,13 @@ drama emergente bom, não exploit silencioso.
 
 ## 14. O core loop, de ponta a ponta
 
-> **Estruturas** (templos × portais) **alimentam a barra** → a barra **inclina o
-> campo** (tilt ~20%, time-vs-mundo) **e enverga o céu** (noites longas no Caos,
-> §9) → o tilt + **Essência/reinos** motivam os dois lados → **rubber-band +
-> enclaves** impedem a bola-de-neve → a **Regra do Batman** e o **não-retorno** dão
-> o peso emocional → a **deriva ao centro** garante a briga eterna.
+> **O mundo deriva pro Caos por natureza** → a Ordem o segura com templos, rituais
+> e presença ativa → **estruturas** (templos × portais) **movem a barra** → a barra
+> **inclina o campo** (tilt ~20%) **e enverga o céu** (noites longas no Caos, §9)
+> → Essência/reinos motivam a Ordem a agir; jogadores Caos amplificam o que o mundo
+> já faz → **rubber-band + enclaves** impedem o travamento → a **Regra do Batman**
+> e o **não-retorno** (com o kin das criaturas) dão o peso emocional → **o mundo
+> nunca descansa, e a briga é eterna.**
 
 Sobre esse loop de longo prazo, o **ciclo dia/noite (§9)** faz o pêndulo **pulsar
 diariamente:** a noite caótica pare sombras, os heróis as caçam até o amanhecer. A
