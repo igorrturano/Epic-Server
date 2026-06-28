@@ -381,7 +381,114 @@ Infra POL-específica que dissolve naturalmente:
 
 ---
 
-## 9. Fora de escopo (specs separados)
+## 9. Localization — English-first + hybrid translation
+
+### Guiding rule
+
+All code uses English identifiers (variables, methods, classes, constants, config keys). All player-facing strings are written in English first. The translation layer sits at the **send boundary** — systems write English and call `Message()` normally; they never know translation exists.
+
+### What was already built (POL)
+
+`pkg/utils/message/include/model/Message.inc` already encodes this design:
+
+- `TranslatableText` wraps text with `sourceLang` / `targetLang`
+- `_translate` flag + `SetAsync(true)` — async send path for API calls
+- `RequestTranslation(sourceLang, targetLang)` — explicit opt-in
+- `_packetLanguage = "ENG"` marker on packet `0xAE` — prevents translation loops in the speech hook
+- `_WantTranslation(who)` — placeholder that was **never completed** (always returns `this._translate`, never checks the player's actual preference)
+
+The C# port finishes what was started.
+
+### Three objects
+
+```
+Game.Core/
+  Localization/
+    Models/       Language.cs, TranslationMode.cs, TranslatableText.cs
+    Interfaces/   ITranslationService.cs, IStringTable.cs
+
+Epic.Content/
+  Localization/
+    StringTable.cs            ← loads en.json / pt.json / es.json at startup; T.Get() calls this
+    TranslationService.cs     ← LibreTranslate HTTP client + in-memory cache + mode logic
+    TranslationPipeline.cs    ← hooks into Message send boundary; wires the two above
+  Message/
+    Message.cs                ← port of Message.inc; same fluent API
+    TranslatableText.cs       ← port of TranslatableText
+```
+
+### Player preferences (same as POL)
+
+Stored on `EpicPlayer`:
+
+| Field | Values | Meaning |
+|---|---|---|
+| `Language` | `EN / PT / ES` | Player's native language |
+| `TranslationMode` | `0 = Off` | Original only, no API call |
+| | `1 = Subtitle` | Original first, translation appended when API resolves |
+| | `2 = Dub` | Translation only (brief wait, then send) |
+
+### `WantTranslation` — the completed logic
+
+In POL this was always returning false. In C# it actually checks:
+
+```csharp
+private bool WantTranslation(Mobile who) {
+    var prefs = ((EpicPlayer)who).TranslationPrefs;
+    if (prefs.Mode == TranslationMode.Off) return false;
+    if (prefs.Language == _text.SourceLanguage) return false; // same language — skip
+    return true;
+}
+```
+
+Called automatically inside `SendSys`, `SendAbove`, `SendEmote` — the caller never invokes it.
+
+### Two paths, zero extra noise for callers
+
+**Static text** (system messages, ability names, gump labels, NPC lines):
+
+```csharp
+// String table lookup — zero latency, zero API
+new Message(T.Get("ability.activate.success")).SendSys(player);
+```
+
+`T.Get(key)` reads from the in-memory string table for the player's language. If the key is missing, falls back to the English default.
+
+**Dynamic text** (player speech, book content, runtime-generated strings):
+
+```csharp
+// System writes English, pipeline handles the rest
+new Message(playerSpeech).SendAbove(player);
+```
+
+Inside `SendAbove`, `WantTranslation(who)` is checked. If true, `RequestTranslation()` is called automatically, which sets `_isAsync = true` and fires `TranslationService` in the background. The original English goes out immediately to the speaker. Translations arrive per-viewer when the API responds.
+
+### Anti-loop guard (preserved from POL)
+
+`_packetLanguage = "ENG"` is stamped on every outgoing packet built by the server. The speech hook checks this field before deciding to translate — packets already stamped are skipped, preventing infinite translation loops.
+
+### String table files
+
+```
+Epic.Content/
+  Localization/
+    Strings/
+      en.json    ← source of truth
+      pt.json
+      es.json
+```
+
+Key format: `"domain.noun.verb"` — e.g. `"ability.activate.success"`, `"combat.hit.miss"`, `"faccao.join.confirm"`.
+
+Missing key → English fallback, logged as warning.
+
+### What the translation gump becomes
+
+`translation.src` ports to a standard server-side gump in `Epic.Content` that writes to `EpicPlayer.Language` and `EpicPlayer.TranslationMode`. Same three languages, same three modes. English first.
+
+---
+
+## 10. Fora de escopo (specs separados)
 
 1. **Design final do combat rework** — decisão em andamento; Step 4 provê o ambiente de teste.
 2. **Design final do craft rework** — quase completo redesign; Step 7 quando o design estiver fechado.
