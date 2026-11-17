@@ -206,15 +206,29 @@ function FluxoCriarArea(mob)
 		endif
 	endif
 
-	// Cria item marcador no local (GM pode destruí-lo para desativar a área)
-	var marker := CreateItemAtLocation(loc.x, loc.y, loc.z, MARKER_GRAPHIC, 1, mob.realm);
+	// Cria marcador invisível no backpack do GM, depois move para o local final
+	// (evita que clientes em range recebam o 0x1A visível do CreateItemAtLocation).
+	// Fallback: cria direto em loc — aceita o flash, melhor que abortar.
+	var marker := CreateItemInBackpack(mob, MARKER_GRAPHIC, 1);
 	if (!marker)
-		SendSysMessageEx(mob, "Falha ao criar marcador no local.", SSM_FAIL);
+		marker := CreateItemAtLocation(loc.x, loc.y, loc.z, MARKER_GRAPHIC, 1, mob.realm);
+		if (!marker)
+			SendSysMessageEx(mob, "Falha ao criar marcador no local.", SSM_FAIL);
+			return;
+		endif
+	endif
+
+	marker.invisible := 1;
+	marker.movable   := 0;
+	marker.color     := MARKER_COLOR;
+	marker.name      := "Infecção: " + nome;
+
+	var moveRes := MoveObjectToLocation(marker, loc.x, loc.y, loc.z, mob.realm, MOVEOBJECT_FORCELOCATION);
+	if (!moveRes)
+		SendSysMessageEx(mob, "Falha ao posicionar marcador: " + moveRes.errortext, SSM_FAIL);
+		DestroyItem(marker);
 		return;
 	endif
-	marker.movable := 0;
-	marker.color   := MARKER_COLOR;
-	marker.name    := "Infecção: " + nome;
 
 	// Persiste no datafile
 	var area_id := "area_" + marker.serial;
@@ -224,8 +238,18 @@ function FluxoCriarArea(mob)
 		CreateDataFile(INFECTAREA_DF);
 		df := OpenDataFile(INFECTAREA_DF);
 	endif
+	if (!df)
+		SendSysMessageEx(mob, "Falha ao abrir datafile " + INFECTAREA_DF + ".", SSM_FAIL);
+		DestroyItem(marker);
+		return;
+	endif
 
 	var elem := df.CreateElement(area_id);
+	if (!elem)
+		SendSysMessageEx(mob, "Falha ao criar elemento '" + area_id + "': " + elem.errortext, SSM_FAIL);
+		DestroyItem(marker);
+		return;
+	endif
 	elem.SetProp("marker_serial", marker.serial);
 	elem.SetProp("name",          nome);
 	elem.SetProp("range",         raio);
@@ -403,8 +427,9 @@ function EnsureWatcherRunning()
 	if (df)
 		var hb := DFFindElement(df, "heartbeat");
 		if (hb)
-			if ((POLCore().systime - CInt(DFGetProp(hb, "ts"))) < HB_TIMEOUT)
-				return; // Watcher já está rodando
+			var delta := POLCore().systime - CInt(DFGetProp(hb, "ts"));
+			if (delta < HB_TIMEOUT)
+				return;
 			endif
 		endif
 	endif
